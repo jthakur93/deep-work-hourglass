@@ -247,8 +247,15 @@ body.sound-on .eq i:nth-child(3) { animation-delay: -0.7s; }
 .pick .pn { font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
 .pick .pd { grid-column: 1; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .pick .pa { grid-row: 1 / span 2; grid-column: 2; color: var(--sand); font-size: 12px; font-weight: 700; white-space: nowrap; }
-.pick-del { flex: none; width: 34px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; font-size: 15px; }
-.pick-del:hover { color: var(--ink); border-color: rgba(237, 231, 220, 0.25); }
+.pick-row.swipe { position: relative; overflow: hidden; border-radius: 10px; }
+.pick-row.swipe .pick { position: relative; z-index: 1; touch-action: pan-y; transition: transform 0.2s ease;
+  background: linear-gradient(rgba(237, 231, 220, 0.03), rgba(237, 231, 220, 0.03)), var(--rail); }
+.pick-row.swipe .pick[aria-pressed="true"] { background: linear-gradient(var(--sand-soft), var(--sand-soft)), var(--rail); }
+.swipe-del { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; padding-left: 18px; text-align: left; border: 0; border-radius: 10px;
+  background: #b4473b; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+.pick-row.removing { opacity: 0; transition: opacity 0.17s ease; }
+.swipe-hint { margin: -2px 0 0; }
+@media (prefers-reduced-motion: reduce) { .pick-row.swipe .pick, .pick-row.removing { transition: none; } }
 .search-row { display: flex; gap: 8px; }
 .search-row input { flex: 1; min-width: 0; }
 .list-note { margin: 0; font-size: 12.5px; color: var(--muted); }
@@ -442,6 +449,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
         <ul class="pick-list" id="ytList"></ul>
         <div class="list-head" id="ytMineHead" hidden><p class="list-label" id="ytMineLabel">Your playlist</p><button class="link" type="button" id="ytPlayAll">Play all</button></div>
         <ul class="pick-list" id="ytMine"></ul>
+        <p class="hint swipe-hint" id="ytSwipeHint" hidden></p>
         <div class="f">
           <label for="ytLink">Add your YouTube playlist or video</label>
           <div class="search-row"><input id="ytLink" type="url" inputmode="url" placeholder="Paste a YouTube link" autocomplete="off"><button class="btn small" type="button" id="ytAdd">Add</button></div>
@@ -452,6 +460,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
       <div class="src-panel" id="panel-sp" role="tabpanel" aria-labelledby="tab-sp" hidden>
         <div class="list-head" id="spMineHead" hidden><p class="list-label" id="spMineLabel">Your playlist</p><button class="link" type="button" id="spPlayAll">Play all</button></div>
         <ul class="pick-list" id="spList"></ul>
+        <p class="hint swipe-hint" id="spSwipeHint" hidden></p>
         <div class="f">
           <label for="spLink">Add your Spotify playlist, album or track</label>
           <div class="search-row"><input id="spLink" type="url" inputmode="url" placeholder="Paste a Spotify link" autocomplete="off"><button class="btn small" type="button" id="spAdd">Add</button></div>
@@ -1191,18 +1200,25 @@ function ytLoadItem(it) {
   if (it.list) ext.yt.loadPlaylist({ list: it.list, listType: "playlist", index: 0 });
   else ext.yt.loadVideoById(it.id);
 }
+async function oembedInfo(page, own) {
+  for (const url of [own, `https://noembed.com/embed?url=${encodeURIComponent(page)}`]) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && j.title) return { title: String(j.title).slice(0, 90), by: String(j.author_name || "").slice(0, 60) };
+    } catch (e) { /* try the next lookup */ }
+  }
+  return null;
+}
 async function ytOembed(it) {
-  try {
-    const page = it.list ? `https://www.youtube.com/playlist?list=${it.list}` : `https://www.youtube.com/watch?v=${it.id}`;
-    const r = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(page)}`);
-    if (!r.ok) return;
-    const title = String((await r.json()).title || "").slice(0, 90);
-    if (!title) return;
-    const k = ytKey(it);
-    prefs.myYt.forEach((x) => { if (ytKey(x) === k) x.title = title; });
-    if (prefs.yt && ytKey(prefs.yt) === k) { prefs.yt.title = title; if (snd.src === "yt") setCardTitle(title); }
-    savePrefs(); renderPicks();
-  } catch (e) { /* keep the generic name */ }
+  const page = it.list ? `https://www.youtube.com/playlist?list=${it.list}` : `https://www.youtube.com/watch?v=${it.id}`;
+  const info = await oembedInfo(page, `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(page)}`);
+  if (!info) return;
+  const k = ytKey(it);
+  prefs.myYt.forEach((x) => { if (ytKey(x) === k) { x.title = info.title; if (info.by) x.by = `${info.by} · ${it.list ? "playlist" : "video"}`; } });
+  if (prefs.yt && ytKey(prefs.yt) === k) { prefs.yt.title = info.title; if (snd.src === "yt") setCardTitle(info.title); }
+  savePrefs(); renderPicks();
 }
 
 /* Spotify */
@@ -1262,17 +1278,13 @@ function parseSpotify(t) {
   return m ? { uri: t, type: m[1], id: m[2] } : null;
 }
 async function spTitle(item) {
-  try {
-    const [, type, id] = item.uri.split(":");
-    const r = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(`https://open.spotify.com/${type}/${id}`)}`);
-    if (!r.ok) return;
-    const j = await r.json();
-    const title = String(j.title || "").slice(0, 90);
-    if (!title) return;
-    prefs.mySp.forEach((x) => { if (x.uri === item.uri) x.title = title; });
-    if (prefs.sp && prefs.sp.uri === item.uri) { prefs.sp.title = title; if (prefs.soundSource === "sp") setCardTitle(title); }
-    savePrefs(); renderPicks();
-  } catch (e) { /* keep the generic name */ }
+  const [, type, id] = item.uri.split(":");
+  const page = `https://open.spotify.com/${type}/${id}`;
+  const info = await oembedInfo(page, `https://open.spotify.com/oembed?url=${encodeURIComponent(page)}`);
+  if (!info) return;
+  prefs.mySp.forEach((x) => { if (x.uri === item.uri) { x.title = info.title; if (info.by) x.by = `${info.by} · Spotify ${type}`; } });
+  if (prefs.sp && prefs.sp.uri === item.uri) { prefs.sp.title = info.title; if (prefs.soundSource === "sp") setCardTitle(info.title); }
+  savePrefs(); renderPicks();
 }
 
 /* repeat, play next or shuffle when a track ends */
@@ -1382,18 +1394,89 @@ function renderTrackInfo() {
     ? `Playing ${cur.name}${myTracks.length > 1 ? ` (${trackIdx + 1} of ${myTracks.length})` : ""}`
     : myTracks.length === 1 ? cur.name : `${myTracks.length} tracks ready`;
 }
-function pickRow({ name, desc, active, status, onPick, onDelete, delLabel }) {
-  const li = document.createElement("li"); li.className = "pick-row";
+const SWIPE_W = 92;
+const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+function setRowX(li, x, animate) {
+  const b = li._btn; if (!b) return;
+  b.style.transition = animate ? "" : "none";
+  b.style.transform = x ? `translateX(${x}px)` : "";
+}
+function closeRow(li) { li.classList.remove("open"); setRowX(li, 0, true); }
+function closeOpenRows(except) { document.querySelectorAll(".pick-row.open").forEach((r) => { if (r !== except) closeRow(r); }); }
+document.addEventListener("pointerdown", (e) => { if (!(e.target.closest && e.target.closest(".pick-row.open"))) closeOpenRows(null); }, true);
+function removeRow(li, onDelete) {
+  li.classList.add("removing");
+  setRowX(li, li.clientWidth, true);
+  setTimeout(onDelete, 170);
+}
+function attachSwipe(li, b, onDelete) {
+  let sx = 0, sy = 0, base = 0, x = 0, drag = false, id = null;
+  b.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    sx = e.clientX; sy = e.clientY; base = li.classList.contains("open") ? SWIPE_W : 0; x = base; drag = false; id = e.pointerId;
+  });
+  b.addEventListener("pointermove", (e) => {
+    if (e.pointerId !== id) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (!drag) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      drag = true; closeOpenRows(li);
+      try { b.setPointerCapture(id); } catch (err) {}
+    }
+    x = clamp(base + dx, 0, li.clientWidth); setRowX(li, x, false);
+  });
+  const end = (e) => {
+    if (e.pointerId !== id) return;
+    id = null;
+    if (!drag) return;
+    drag = false; li._suppress = true; setTimeout(() => { li._suppress = false; }, 350);
+    if (x > li.clientWidth * 0.6) { removeRow(li, onDelete); return; }
+    if (x > SWIPE_W / 2) { li.classList.add("open"); setRowX(li, SWIPE_W, true); } else closeRow(li);
+  };
+  b.addEventListener("pointerup", end);
+  b.addEventListener("pointercancel", end);
+}
+function pickRow({ name, desc, active, status, onPick, onDelete }) {
+  const li = document.createElement("li"); li.className = "pick-row" + (onDelete ? " swipe" : "");
   const b = document.createElement("button"); b.type = "button"; b.className = "pick"; b.setAttribute("aria-pressed", String(!!active));
   const n = document.createElement("span"); n.className = "pn"; n.textContent = name;
   const d = document.createElement("span"); d.className = "pd"; d.textContent = desc || "";
   const a = document.createElement("span"); a.className = "pa"; a.textContent = status;
-  b.append(n, a, d); b.addEventListener("click", onPick); li.append(b);
+  b.append(n, a, d);
+  b.addEventListener("click", (e) => {
+    if (li._suppress) { e.preventDefault(); return; }
+    if (li.classList.contains("open")) { closeRow(li); return; }
+    onPick();
+  });
+  li._btn = b;
   if (onDelete) {
-    const x = document.createElement("button"); x.type = "button"; x.className = "pick-del"; x.textContent = "×";
-    x.setAttribute("aria-label", delLabel || `Remove ${name}`); x.addEventListener("click", onDelete); li.append(x);
+    const del = document.createElement("button"); del.type = "button"; del.className = "swipe-del"; del.textContent = "Delete";
+    del.tabIndex = -1; del.setAttribute("aria-hidden", "true");
+    del.addEventListener("click", (e) => { e.stopPropagation(); removeRow(li, onDelete); });
+    b.setAttribute("aria-keyshortcuts", "Delete");
+    b.title = coarsePointer ? "Swipe right to delete" : "Drag right, or press Delete, to remove";
+    b.addEventListener("keydown", (e) => { if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeRow(li, onDelete); } });
+    attachSwipe(li, b, onDelete);
+    li.append(del);
   }
+  li.append(b);
   return li;
+}
+function deleteSaved(kind, it) {
+  const listKey = kind === "yt" ? "myYt" : "mySp";
+  const keyFn = kind === "yt" ? ytKey : (x) => x.uri;
+  const list = prefs[listKey], idx = list.findIndex((x) => keyFn(x) === keyFn(it));
+  if (idx < 0) return;
+  const removed = list[idx];
+  prefs[listKey] = list.filter((_, i) => i !== idx);
+  const cur = prefs.soundSource === kind && prefs[kind] && keyFn(prefs[kind]) === keyFn(it);
+  if (cur && listening && snd.src === kind) { listening = false; soundSync(); }
+  savePrefs(); renderPicks();
+  const shown = removed.title || (kind === "yt" ? (removed.list ? "Your YouTube playlist" : "YouTube video") : "Spotify track");
+  toast(`Deleted “${shown}”.`, { label: "Undo", fn: () => {
+    const l = prefs[listKey].slice(); l.splice(Math.min(idx, l.length), 0, removed);
+    prefs[listKey] = l; savePrefs(); renderPicks();
+  } });
 }
 function statusFor(src, isCurrent) {
   if (!isCurrent) return "Play";
@@ -1406,27 +1489,21 @@ function renderPicks() {
     return pickRow({ name: it.title || (it.list ? "Your YouTube playlist" : "YouTube video"), desc: it.by || (it.list ? "YouTube playlist" : "YouTube video"),
       active: cur, status: statusFor("yt", cur),
       onPick: () => { if (cur && listening && snd.src === "yt") toggleSound(); else choose("yt", { yt: { id: it.id || null, list: it.list || null, title: it.title || "" } }); },
-      onDelete: mine ? () => {
-        prefs.myYt = prefs.myYt.filter((x) => ytKey(x) !== k);
-        if (cur) { listening = false; soundSync(); prefs.yt = null; }
-        savePrefs(); renderPicks();
-      } : null });
+      onDelete: mine ? () => deleteSaved("yt", it) : null });
   };
   el.ytList.replaceChildren(...YT_PICKS.map((x) => ytRow({ ...x, list: null }, false)));
   el.ytMine.replaceChildren(...prefs.myYt.map((x) => ytRow(x, true)));
   el.ytMineHead.hidden = !prefs.myYt.length;
   el.ytMineLabel.textContent = `Your playlist · ${prefs.myYt.length}`;
   el.spMineHead.hidden = !prefs.mySp.length;
+  const swipeText = coarsePointer ? "Swipe a track to the right to delete it." : "To remove a track, drag it to the right, or select it and press Delete.";
+  [["ytSwipeHint", prefs.myYt.length], ["spSwipeHint", prefs.mySp.length]].forEach(([id, n]) => { const h = $("#" + id); h.hidden = !n; h.textContent = swipeText; });
   el.spMineLabel.textContent = `Your playlist · ${prefs.mySp.length}`;
   el.spList.replaceChildren(...prefs.mySp.map((it) => {
     const cur = prefs.soundSource === "sp" && prefs.sp && prefs.sp.uri === it.uri;
-    return pickRow({ name: it.title || "Spotify", desc: `Spotify ${it.uri.split(":")[1] || "link"}`, active: cur, status: statusFor("sp", cur),
+    return pickRow({ name: it.title || "Spotify track", desc: it.by || `Spotify ${it.uri.split(":")[1] || "link"}`, active: cur, status: statusFor("sp", cur),
       onPick: () => { if (cur && listening && snd.src === "sp") toggleSound(); else choose("sp", { sp: { uri: it.uri, title: it.title || "" } }); },
-      onDelete: () => {
-        prefs.mySp = prefs.mySp.filter((x) => x.uri !== it.uri);
-        if (cur) { listening = false; soundSync(); prefs.sp = null; }
-        savePrefs(); renderPicks();
-      } });
+      onDelete: () => deleteSaved("sp", it) });
   }));
 }
 function setTab(t) {
@@ -2538,11 +2615,14 @@ function addYt() {
   const it = parseYouTube(el.ytLink.value);
   if (!it) { toast("That doesn’t look like a YouTube link. On the video or playlist, use Share → Copy link, then paste it here."); el.ytLink.focus(); return; }
   const k = ytKey(it);
-  const known = YT_PICKS.find((x) => !it.list && x.id === it.id) || prefs.myYt.find((x) => ytKey(x) === k);
-  if (!known) prefs.myYt = [...prefs.myYt, { id: it.id, list: it.list, title: "" }].slice(-30);
+  const pick = YT_PICKS.find((x) => !it.list && x.id === it.id);
+  const known = prefs.myYt.find((x) => ytKey(x) === k);
+  if (!known) prefs.myYt = [...prefs.myYt, { id: it.id, list: it.list, title: pick ? pick.title : "", by: pick ? pick.by : "" }].slice(-100);
+  else toast("That link is already in your playlist.");
   el.ytLink.value = "";
-  choose("yt", { yt: { id: it.id, list: it.list, title: known ? known.title : "" } });
-  if (!known || !known.title) ytOembed(it);
+  const saved = prefs.myYt.find((x) => ytKey(x) === k);
+  choose("yt", { yt: { id: it.id, list: it.list, title: saved ? saved.title : "" } });
+  if (!saved || !saved.title) ytOembed(it);
 }
 el.ytAdd.addEventListener("click", addYt);
 el.ytLink.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addYt(); } });
@@ -2551,7 +2631,8 @@ function addSp() {
   if (!it) { toast("That doesn’t look like a Spotify link. In Spotify, use Share → Copy link to playlist, then paste it here."); el.spLink.focus(); return; }
   const known = prefs.mySp.find((x) => x.uri === it.uri);
   const label = `Spotify ${it.type}`;
-  if (!known) prefs.mySp = [...prefs.mySp, { uri: it.uri, title: label }].slice(-30);
+  if (!known) prefs.mySp = [...prefs.mySp, { uri: it.uri, title: label }].slice(-100);
+  else toast("That link is already in your playlist.");
   el.spLink.value = "";
   choose("sp", { sp: { uri: it.uri, title: known ? known.title : label } });
   spTitle({ uri: it.uri });
@@ -2656,13 +2737,17 @@ if (location.protocol === "file:") {
     + "<li><b>Android:</b> menu ⋮ → Install app (or Add to Home screen).</li>"
     + "<li><b>Floating timer:</b> click Float mini timer (or press P) before you minimise. Drag it anywhere and pull its corner to resize.</li>";
 }
-$("#syncHint").textContent = "Your schedule, focus history and music files stay in this browser on this device, and there is no account. Radio, YouTube and Spotify only connect when you pick them.";
+$("#syncHint").textContent = "Your schedule, focus history and music files stay in this browser on this device, and there is no account. YouTube and Spotify only connect when you pick them, and links you save stay in your playlist here.";
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 if (!EMBEDS_OK) { $("#srcTabs").hidden = true; $("#fullAppNote").hidden = false; }
 if (T.status === "running" && T.endAt <= Date.now()) complete(true);
 render(); renderStats(); renderSchedule(); renderAlerts(); renderSound(); tick();
+if (EMBEDS_OK) {
+  prefs.myYt.filter((x) => !x.title).slice(0, 10).forEach((x) => ytOembed(x));
+  prefs.mySp.filter((x) => !x.by).slice(0, 10).forEach((x) => spTitle(x));
+}
 start3D();
 (async () => {
   try {

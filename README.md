@@ -32,7 +32,7 @@ A digital countdown keeps asking you to read it. Sand doesn't. You can see how m
   - **My music:** your own audio files, played as a repeating playlist
 
   The sound starts with your session and fades out just before the bell.
-- **Or bring your own music.** Build your own playlist from YouTube videos and playlists (or play a live stream such as Lofi Girl), or from Spotify playlists, albums and tracks. Log in to Spotify in the same browser and full songs play from your account. Choose what happens when a track ends: repeat it, play the next one, or shuffle, so the music lasts your whole session. Your playlist is saved for next time.
+- **Or bring your own music.** Build your own playlist from YouTube videos and playlists (or play a live stream such as Lofi Girl), or from Spotify playlists, albums and tracks. Log in to Spotify in the same browser and full songs play from your account. Choose what happens when a track ends: repeat it, play the next one, or shuffle, so the music lasts your whole session. Every link you add is saved to your playlist for next time; to remove one, swipe it to the right (on a computer, drag it or select it and press Delete), and Undo brings it back.
 - **A floating hourglass.** One click pops out just the hourglass, on top of every app, even when the main window is minimised. Drag it anywhere and resize it; hover over it for the time, pause and sound. On phones it floats over your other apps too (Chrome on Android, Safari on iPhone).
 - **A focus schedule.** Add blocks such as *9:30 AM, 90 min, weekdays*. When a block starts, the glass turns over by itself. One click adds the block to Google Calendar, so you get reminded even when the app is closed.
 - **Focus mode.** Full screen, with only the glass and the time.
@@ -66,7 +66,7 @@ Open **[the app](https://jthakur93.github.io/deep-work-hourglass/)**, then:
 
 There are no accounts, no tracking and no server. Your schedule, focus history and settings are kept in your own browser's storage, and so are any music files you add. They never leave your device.
 
-The app loads its two fonts from Google Fonts. YouTube and Spotify only connect when you pick them: your browser then talks to that service directly, under its own terms and privacy policy, and they may set their own cookies. The app never sees your YouTube or Spotify account. The sounds under "Made here" need no connection at all.
+The app loads its two fonts from Google Fonts. YouTube and Spotify only connect when you pick them: your browser then talks to that service directly, under its own terms and privacy policy, and they may set their own cookies. The app never sees your YouTube or Spotify account. When you save a link, the app looks up its title once through the service's own oEmbed endpoint or [noembed.com](https://noembed.com), and only the link is sent. Saved links stay in your browser. The sounds under "Made here" need no connection at all.
 
 ## Browser support
 
