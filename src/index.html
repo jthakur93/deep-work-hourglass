@@ -280,6 +280,18 @@ body.sound-on .eq i:nth-child(3) { animation-delay: -0.7s; }
 .mc-x:hover { color: var(--ink); background: rgba(237, 231, 220, 0.06); }
 .mc-body.yt { aspect-ratio: 16 / 9; min-height: 200px; }
 .mc-body.sp { height: 152px; }
+.mc-body.sp-app { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.mc-body.sp-app .btn { align-self: flex-start; text-decoration: none; }
+.mc-body.sp-app p, .mc-note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+.mc-note { padding: 8px 12px 10px; }
+.install-card { display: none; }
+@media (max-width: 860px) {
+  .install-card:not([hidden]) { display: flex; flex-direction: column; gap: 10px; margin: 12px 16px; padding: 12px 14px; border-radius: 12px;
+    background: #141b25; border: 1px solid rgba(228, 173, 99, 0.4); }
+  .install-card .ic-txt { display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; line-height: 1.45; }
+  .install-card .ic-txt b { font-size: 14px; }
+  .install-card .ic-acts { display: flex; gap: 12px; align-items: center; }
+}
 #ytMount, #spMount, .mc-body iframe { display: block; width: 100%; height: 100%; border: 0; }
 .tracks { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12.5px; color: var(--muted); }
 .tracks #trackInfo { overflow-wrap: anywhere; }
@@ -376,6 +388,16 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
     </div>
     <div class="mc-body yt" id="ytBox" hidden><div id="ytMount"></div></div>
     <div class="mc-body sp" id="spBox" hidden><div id="spMount"></div></div>
+    <p class="mc-note" id="spDeskNote" hidden>Only hearing 30-second previews? <a class="link" id="spOpenDesk" href="https://open.spotify.com/" target="_blank" rel="noopener">Play it in the Spotify app ↗</a></p>
+    <div class="mc-body sp-app" id="spAppBox" hidden>
+      <a class="btn primary small" id="spOpen" href="https://open.spotify.com/" target="_blank" rel="noopener">Open in Spotify ↗</a>
+      <p>Full songs play in the Spotify app, on the free plan too, and keep going when you switch apps or lock your phone. Press play there, then come back to the hourglass.</p>
+    </div>
+  </div>
+
+  <div class="install-card" id="installCard" hidden>
+    <div class="ic-txt"><b>Use it as an app</b><span id="installText"></span></div>
+    <div class="ic-acts"><button class="btn primary small" type="button" id="installBtn" hidden>Install</button><button class="link quiet" type="button" id="installLater">Not now</button></div>
   </div>
 
   <aside class="rail" aria-label="Timer controls">
@@ -455,7 +477,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
           <div class="search-row"><input id="ytLink" type="url" inputmode="url" placeholder="Paste a YouTube link" autocomplete="off"><button class="btn small" type="button" id="ytAdd">Add</button></div>
         </div>
         <p class="hint">To use your own playlist: on YouTube, open the playlist, tap <b>Share → Copy link</b> and paste it here. Public and unlisted playlists work. <a class="link" href="https://www.youtube.com/feed/playlists" target="_blank" rel="noopener">Open my YouTube playlists ↗</a> · <a class="link" href="https://www.youtube.com/results?search_query=adhd+focus+music" target="_blank" rel="noopener">Find ADHD focus music ↗</a></p>
-        <p class="hint">The video plays in a small player (YouTube needs it to stay visible). On a phone, tap ▶ on the player once. Live streams like Lofi Girl never end, so they just keep playing.</p>
+        <p class="hint" id="ytPlayHint">The video plays in a small player (YouTube needs it to stay visible). On a phone, tap ▶ on the player once. Live streams like Lofi Girl never end, so they just keep playing.</p>
+        <p class="hint" id="ytPhoneHint" hidden><b>On phones, YouTube only plays while the hourglass is on screen.</b> Playing with the screen off or in another app is a YouTube Premium feature. During a session the screen stays on, and the music picks up again when you come back. For music that keeps going while you use other apps, pick Spotify.</p>
       </div>
       <div class="src-panel" id="panel-sp" role="tabpanel" aria-labelledby="tab-sp" hidden>
         <div class="list-head" id="spMineHead" hidden><p class="list-label" id="spMineLabel">Your playlist</p><button class="link" type="button" id="spPlayAll">Play all</button></div>
@@ -465,7 +488,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
           <label for="spLink">Add your Spotify playlist, album or track</label>
           <div class="search-row"><input id="spLink" type="url" inputmode="url" placeholder="Paste a Spotify link" autocomplete="off"><button class="btn small" type="button" id="spAdd">Add</button></div>
         </div>
-        <p class="hint"><b>1.</b> <a class="link" href="https://accounts.spotify.com/login" target="_blank" rel="noopener">Log in to Spotify ↗</a> in this browser, so full songs play from your account (Free or Premium). Without it, Spotify plays 30-second previews.<br>
+        <p class="hint" id="spAppHint" hidden><b>On your phone, Spotify plays in the Spotify app.</b> Full songs on the free plan too, and the music keeps going when you switch apps or lock the screen. Tap a playlist to open it in Spotify, or just press Start: the session opens your selected one there.<br>To add one: in Spotify, tap <b>⋯ → Share → Copy link</b> and paste it here.</p>
+        <p class="hint" id="spWebHint"><b>1.</b> <a class="link" href="https://accounts.spotify.com/login" target="_blank" rel="noopener">Log in to Spotify ↗</a> in this browser, so full songs play from your account (Free or Premium). Without it, Spotify plays 30-second previews.<br>
         <b>2.</b> In Spotify, open a playlist, tap <b>⋯ → Share → Copy link</b> and paste it here. <a class="link" href="https://open.spotify.com/collection/playlists" target="_blank" rel="noopener">Open my Spotify playlists ↗</a></p>
       </div>
       <div class="loop-row" id="loopRow" hidden>
@@ -524,6 +548,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
           <label class="switch" for="optChime"><input type="checkbox" id="optChime" role="switch"><span class="track"></span><span>Bell when a session ends</span></label>
           <button class="link" type="button" id="testSound">Play</button>
         </div>
+        <div class="opt" id="awakeOpt" hidden><label class="switch" for="optAwake"><input type="checkbox" id="optAwake" role="switch"><span class="track"></span><span>Keep the screen on during a session</span></label></div>
         <div class="opt"><label class="switch" for="optAuto"><input type="checkbox" id="optAuto" role="switch"><span class="track"></span><span>Start scheduled blocks automatically</span></label></div>
         <div class="opt"><button class="btn small" type="button" id="alertsBtn">Turn on desktop alerts</button><span class="meta" id="alertsNote"></span></div>
       </div>
@@ -602,7 +627,10 @@ const el = {
   nextUp: $("#nextUp"), schedList: $("#schedList"), suggest: $("#suggest"), syncNote: $("#syncNote"),
   addForm: $("#addForm"), addTime: $("#addTime"), addMin: $("#addMin"), addLabel: $("#addLabel"),
   dayBtns: [...document.querySelectorAll("#addDays button")],
-  optChime: $("#optChime"), optAuto: $("#optAuto"), testSound: $("#testSound"),
+  optChime: $("#optChime"), optAuto: $("#optAuto"), testSound: $("#testSound"), optAwake: $("#optAwake"), awakeOpt: $("#awakeOpt"),
+  spAppBox: $("#spAppBox"), spOpen: $("#spOpen"), spDeskNote: $("#spDeskNote"), spOpenDesk: $("#spOpenDesk"), spAppHint: $("#spAppHint"), spWebHint: $("#spWebHint"),
+  ytPlayHint: $("#ytPlayHint"), ytPhoneHint: $("#ytPhoneHint"),
+  installCard: $("#installCard"), installText: $("#installText"), installBtn: $("#installBtn"), installLater: $("#installLater"),
   soundModes: [...document.querySelectorAll("#soundModes .chip")], soundDesc: $("#soundDesc"), soundPlay: $("#soundPlay"),
   soundVol: $("#soundVol"), optSoundAuto: $("#optSoundAuto"), myTracks: $("#myTracks"), trackPick: $("#trackPick"),
   trackInput: $("#trackInput"), trackInfo: $("#trackInfo"), trackClear: $("#trackClear"),
@@ -620,7 +648,7 @@ const el = {
 
 /* ---------- state ---------- */
 const prefs = Object.assign({ minutes: 25, chime: true, autoStart: true, soundMode: "pulse", soundAuto: true, volume: 60,
-  soundSource: "gen", yt: null, sp: null, myYt: [], mySp: [], loopMode: "list" }, store.get("dwh.prefs.v1", {}));
+  soundSource: "gen", yt: null, sp: null, myYt: [], mySp: [], loopMode: "list", keepAwake: true, installHidden: false }, store.get("dwh.prefs.v1", {}));
 if (!Array.isArray(prefs.myYt)) prefs.myYt = [];
 if (!Array.isArray(prefs.mySp)) prefs.mySp = [];
 if (!["gen", "yt", "sp"].includes(prefs.soundSource)) prefs.soundSource = "gen";
@@ -1074,7 +1102,18 @@ if (!EMBEDS_OK) { uiTab = "gen"; prefs.soundSource = "gen"; }
 
 /* iPhone: let generated sound play with the ring switch on silent */
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* not supported */ }
+const PHONE_LIKE = IOS || /Android/i.test(navigator.userAgent);
+// On phones and tablets the Spotify player inside a web page only plays 30-second previews, so Spotify opens in its own app there.
+const SP_APP = PHONE_LIKE;
+// When Spotify plays in its own app, this page mixes its bell in rather than stopping Spotify.
+function audioSessionType() {
+  try {
+    if (!navigator.audioSession) return;
+    const t = EMBEDS_OK && SP_APP && prefs.soundSource === "sp" ? "ambient" : "playback";
+    if (navigator.audioSession.type !== t) navigator.audioSession.type = t;
+  } catch (e) { /* not supported */ }
+}
+audioSessionType();
 let silentEl = null;
 function silentLoop(on) {
   if (!IOS || "audioSession" in navigator) return;
@@ -1094,10 +1133,13 @@ function silentLoop(on) {
   } catch (e) {}
 }
 
+function cardBox(kind) { return kind === "yt" ? el.ytBox : kind === "sp" ? (SP_APP ? el.spAppBox : el.spBox) : null; }
 function showCard(kind, title) {
-  const fresh = el.mediaCard.hidden || el[kind === "yt" ? "ytBox" : "spBox"].hidden;
+  const box = cardBox(kind);
+  const fresh = el.mediaCard.hidden || box.hidden;
   el.mediaCard.hidden = false;
-  el.ytBox.hidden = kind !== "yt"; el.spBox.hidden = kind !== "sp";
+  [el.ytBox, el.spBox, el.spAppBox].forEach((b) => { b.hidden = b !== box; });
+  el.spDeskNote.hidden = box !== el.spBox;
   setCardTitle(title);
   if (fresh) setCardState("loading");
 }
@@ -1107,13 +1149,14 @@ const CARD_STATES = {
   loading: "Loading…",
   paused: "Paused · tap ▶ on the player to play",
   tap: "Tap ▶ on the player to start",
+  app: "Plays in the Spotify app",
 };
 function setCardState(st) {
   el.mediaCard.classList.toggle("playing", st === "playing");
   const t = CARD_STATES[st] || "";
   if (el.mcState.textContent !== t) el.mcState.textContent = t;
 }
-function hideCard(kind) { if (!kind || !el[kind === "yt" ? "ytBox" : "spBox"].hidden) el.mediaCard.hidden = true; }
+function hideCard(kind) { const box = cardBox(kind); if (!box || !box.hidden) el.mediaCard.hidden = true; }
 
 /* YouTube (the player stays visible on the hourglass, as YouTube requires) */
 function ytLoad() {
@@ -1165,6 +1208,8 @@ function ytSync() {
         },
         onStateChange: (e) => {
           if (e.data === 0) { ytEnded(); return; }
+          if (e.data === 2) ext.ytUserPaused = !document.hidden && !ext.ytHiding;
+          else if (e.data === 1) ext.ytUserPaused = false;
           setCardState(e.data === 1 ? "playing" : e.data === 3 ? "loading" : e.data === 2 ? "paused" : "tap");
           if (e.data === 1) { try { ext.ytIndex = e.target.getPlaylistIndex(); } catch (err) {} ytApplyListMode(); }
           if (e.data !== 1 || !e.target.getVideoData) return;
@@ -1184,8 +1229,13 @@ function ytSync() {
   return true;
 }
 function ytPause() {
-  if (ext.yt && ext.ytReady) { try { ext.yt.pauseVideo(); } catch (e) {} }
+  if (ext.yt && ext.ytReady) { try { ext.ytHiding = true; ext.yt.pauseVideo(); } catch (e) {} setTimeout(() => { ext.ytHiding = false; }, 600); }
   hideCard("yt");
+}
+// a phone pauses YouTube when you leave the page; start it again when you're back (or on your next tap)
+function ytResumeIfNeeded() {
+  if (!listening || snd.src !== "yt" || !ext.yt || !ext.ytReady || ext.ytUserPaused || document.hidden) return;
+  try { const st = ext.yt.getPlayerState(); if (st === 2 || st === -1 || st === 5) ext.yt.playVideo(); } catch (e) {}
 }
 function parseYouTube(t) {
   t = String(t || "").trim();
@@ -1231,10 +1281,24 @@ function spLoad() {
   }).catch((e) => { ext.spApi = null; throw e; });
   return ext.spApi;
 }
+function spOpenUrl(it) { const [, type, id] = it.uri.split(":"); return `https://open.spotify.com/${type}/${id}`; }
+function spOpenApp(it) {
+  const a = document.createElement("a"); a.href = spOpenUrl(it); a.target = "_blank"; a.rel = "noopener";
+  document.body.append(a); a.click(); a.remove();
+}
 function spSync() {
   const it = prefs.sp;
   if (!it || !it.uri) { toast("Paste a Spotify link first."); setTab("sp"); return false; }
   showCard("sp", it.title || "Spotify");
+  el.spOpen.href = el.spOpenDesk.href = spOpenUrl(it);
+  if (SP_APP) {
+    setCardState("app");
+    // open Spotify only straight after a tap (Start, or tapping a playlist), never by itself
+    const tapped = !navigator.userActivation || navigator.userActivation.isActive;
+    if (ext.spOpenNow && tapped) spOpenApp(it);
+    ext.spOpenNow = false;
+    return true;
+  }
   if (ext.sp) {
     try { if (ext.spUri !== it.uri) { ext.spUri = it.uri; ext.sp.loadUri(it.uri); } ext.sp.play(); } catch (e) {}
     return true;
@@ -1333,8 +1397,10 @@ function nextTrackIndex() {
   return trackIdx + 1;
 }
 function renderLoop() {
-  const show = STREAMS_OK && EMBEDS_OK ? uiTab === "yt" || uiTab === "sp" || (uiTab === "gen" && prefs.soundMode === "mine") : uiTab === "gen" && prefs.soundMode === "mine";
+  const show = STREAMS_OK && EMBEDS_OK ? uiTab === "yt" || (uiTab === "sp" && !SP_APP) || (uiTab === "gen" && prefs.soundMode === "mine") : uiTab === "gen" && prefs.soundMode === "mine";
   el.loopRow.hidden = !show;
+  const vol = document.querySelector(".vol");
+  if (vol) vol.hidden = EMBEDS_OK && SP_APP && uiTab === "sp"; // the Spotify app sets its own volume
   el.loopChips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.loop === prefs.loopMode)));
   const where = uiTab === "yt" ? "your YouTube playlist" : uiTab === "sp" ? "your Spotify playlist" : "your music files";
   el.loopHint.textContent = prefs.loopMode === "one"
@@ -1365,6 +1431,7 @@ function soundSync() {
     if (!ok) { listening = false; stopSource(src); }
   } else SOURCES.forEach(stopSource);
   snd.src = listening ? src : null;
+  audioSessionType();
   silentLoop(listening && src === "gen");
   soundButtons(); renderTrackInfo(); renderPicks();
 }
@@ -1496,13 +1563,17 @@ function renderPicks() {
   el.ytMineHead.hidden = !prefs.myYt.length;
   el.ytMineLabel.textContent = `Your playlist · ${prefs.myYt.length}`;
   el.spMineHead.hidden = !prefs.mySp.length;
+  el.spPlayAll.hidden = SP_APP;
   const swipeText = coarsePointer ? "Swipe a track to the right to delete it." : "To remove a track, drag it to the right, or select it and press Delete.";
   [["ytSwipeHint", prefs.myYt.length], ["spSwipeHint", prefs.mySp.length]].forEach(([id, n]) => { const h = $("#" + id); h.hidden = !n; h.textContent = swipeText; });
   el.spMineLabel.textContent = `Your playlist · ${prefs.mySp.length}`;
   el.spList.replaceChildren(...prefs.mySp.map((it) => {
     const cur = prefs.soundSource === "sp" && prefs.sp && prefs.sp.uri === it.uri;
-    return pickRow({ name: it.title || "Spotify track", desc: it.by || `Spotify ${it.uri.split(":")[1] || "link"}`, active: cur, status: statusFor("sp", cur),
-      onPick: () => { if (cur && listening && snd.src === "sp") toggleSound(); else choose("sp", { sp: { uri: it.uri, title: it.title || "" } }); },
+    return pickRow({ name: it.title || "Spotify track", desc: it.by || `Spotify ${it.uri.split(":")[1] || "link"}`, active: cur, status: SP_APP ? "Open ↗" : statusFor("sp", cur),
+      onPick: () => {
+        if (SP_APP) { ext.spOpenNow = true; choose("sp", { sp: { uri: it.uri, title: it.title || "" } }); return; }
+        if (cur && listening && snd.src === "sp") toggleSound(); else choose("sp", { sp: { uri: it.uri, title: it.title || "" } });
+      },
       onDelete: () => deleteSaved("sp", it) });
   }));
 }
@@ -1723,6 +1794,70 @@ async function toggleMini() {
   await openVideoPip();
 }
 
+/* ---------- keep the screen on during a session ---------- */
+let wakeLock = null, wakeBusy = false, wakeFailAt = 0;
+async function keepAwake() {
+  if (!("wakeLock" in navigator) || wakeBusy || Date.now() - wakeFailAt < 20000) return;
+  const want = prefs.keepAwake && (T.status === "running" || T.status === "starting") && !document.hidden;
+  if (want === !!wakeLock) return;
+  wakeBusy = true;
+  try {
+    if (want) {
+      const w = await navigator.wakeLock.request("screen");
+      wakeLock = w;
+      w.addEventListener("release", () => { if (wakeLock === w) wakeLock = null; });
+    } else { const w = wakeLock; wakeLock = null; await w.release(); }
+  } catch (e) { wakeLock = null; wakeFailAt = Date.now(); }
+  wakeBusy = false;
+}
+
+/* ---------- the music control on the lock screen and at the top of the phone ---------- */
+const ART = STREAMS_OK && /^https?:$/.test(location.protocol)
+  ? [192, 512].map((n) => ({ src: new URL(`icons/icon-${n}.png`, location.href).href, sizes: `${n}x${n}`, type: "image/png" })) : [];
+let mediaKey = "";
+function mediaSessionUpdate() {
+  const ms = navigator.mediaSession;
+  if (!ms || typeof MediaMetadata === "undefined") return;
+  const on = T.status === "running" || T.status === "paused" || T.status === "starting";
+  const mins = Math.max(1, Math.ceil(remaining() / 60000));
+  const key = on ? `${T.status}|${mins}|${T.label}` : "off";
+  if (key === mediaKey) return;
+  mediaKey = key;
+  try {
+    if (!on) { ms.metadata = new MediaMetadata({ title: "Deep Work Hourglass", artist: "Ready when you are", artwork: ART }); ms.playbackState = "none"; return; }
+    ms.metadata = new MediaMetadata({
+      title: T.label || "Deep work",
+      artist: T.status === "paused" ? `Paused · ${mins} min left` : `${mins} min left`,
+      album: "Deep Work Hourglass",
+      artwork: ART,
+    });
+    ms.playbackState = T.status === "paused" ? "paused" : "playing";
+  } catch (e) { /* not supported */ }
+}
+try {
+  navigator.mediaSession.setActionHandler("play", () => { if (T.status === "paused") resume(); else if (!listening) toggleSound(); });
+  navigator.mediaSession.setActionHandler("pause", () => { if (T.status === "running") pause(); else if (listening) toggleSound(); });
+} catch (e) { /* not supported */ }
+
+/* ---------- install it as an app on a phone ---------- */
+const STANDALONE = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
+const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|LinkedInApp|Snapchat|Line\/|Twitter|MicroMessenger|GSA\//i.test(navigator.userAgent);
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; renderInstall(); });
+window.addEventListener("appinstalled", () => { installEvt = null; el.installCard.hidden = true; });
+function renderInstall() {
+  const show = EMBEDS_OK && PHONE_LIKE && !STANDALONE && !prefs.installHidden;
+  el.installCard.hidden = !show;
+  if (!show) return;
+  el.installBtn.hidden = !installEvt || IN_APP;
+  const back = "It then opens from its own icon, and the music control at the top of your phone brings you back to the hourglass.";
+  el.installText.textContent = IN_APP
+    ? "You’ve opened this inside another app. Tap ⋯ (or the menu) and choose Open in browser, then add it to your Home Screen from there."
+    : IOS ? `Tap Share ⬆ (at the bottom in Safari), then Add to Home Screen. ${back} Your saved links stay in Safari, so add them again in the app.`
+    : installEvt ? `Tap Install. ${back}`
+    : `Open the browser menu ⋮ and tap Install app (or Add to Home screen). ${back}`;
+}
+
 /* ---------- alerts ---------- */
 function notify(title, body) {
   try { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body, silent: true }); } catch (e) {}
@@ -1772,6 +1907,9 @@ function startSession(opts = {}) {
   if (typeof opts.label === "string") { T.label = opts.label; el.intent.value = opts.label; }
   ensureAudio();
   el.banner.hidden = true;
+  // Spotify on a phone: open it in the Spotify app from this tap
+  const openSpotify = EMBEDS_OK && SP_APP && prefs.soundAuto && prefs.soundSource === "sp" && !!(prefs.sp && prefs.sp.uri);
+  ext.spOpenNow = openSpotify;
   T.status = "starting";
   render();
   ambientUpdate();
@@ -1784,7 +1922,7 @@ function startSession(opts = {}) {
     T.logged = false;
     saveTimer(); scheduleChime(); ambientUpdate(); render();
   };
-  if (hg && !document.hidden && !reduced) { hg.flip(go); setTimeout(go, 2600); }
+  if (hg && !document.hidden && !reduced && !openSpotify) { hg.flip(go); setTimeout(go, 2600); }
   else go();
 }
 function pause() {
@@ -2134,7 +2272,7 @@ function tick() {
     renderNext();
     if (now.getHours() === 0 && now.getMinutes() === 0) { renderStats(); renderSchedule(); }
   }
-  soundTick(); miniTick();
+  soundTick(); miniTick(); mediaSessionUpdate(); keepAwake();
   if (++tickCount % 4 === 0) checkSchedule();
 }
 
@@ -2594,6 +2732,23 @@ el.addForm.addEventListener("submit", (e) => {
 el.optChime.checked = prefs.chime; el.optAuto.checked = prefs.autoStart;
 el.optChime.addEventListener("change", () => { prefs.chime = el.optChime.checked; savePrefs(); ensureAudio(); if (prefs.chime) scheduleChime(); else cancelChime(); });
 el.optAuto.addEventListener("change", () => { prefs.autoStart = el.optAuto.checked; savePrefs(); });
+el.awakeOpt.hidden = !("wakeLock" in navigator);
+el.optAwake.checked = prefs.keepAwake;
+el.optAwake.addEventListener("change", () => { prefs.keepAwake = el.optAwake.checked; savePrefs(); keepAwake(); });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) wakeFailAt = 0;
+  keepAwake();
+  if (!document.hidden) setTimeout(ytResumeIfNeeded, 400);
+});
+el.installLater.addEventListener("click", () => { prefs.installHidden = true; savePrefs(); renderInstall(); });
+el.installBtn.addEventListener("click", async () => {
+  if (!installEvt) return;
+  const e = installEvt; installEvt = null;
+  try { await e.prompt(); await e.userChoice; } catch (err) {}
+  renderInstall();
+});
+if (EMBEDS_OK && SP_APP) { el.spAppHint.hidden = false; el.spWebHint.hidden = true; }
+if (EMBEDS_OK && PHONE_LIKE) { el.ytPhoneHint.hidden = false; el.ytPlayHint.hidden = true; }
 el.soundModes.forEach((b) => b.addEventListener("click", () => {
   if (b.dataset.mode === "mine" && !myTracks.length) { prefs.soundMode = "mine"; savePrefs(); renderSound(); el.trackInput.click(); return; }
   choose("gen", { soundMode: b.dataset.mode });
@@ -2704,6 +2859,7 @@ function unlockAudio() {
   if (wasOff && T.status === "running") setTimeout(() => { scheduleChime(); ambientUpdate(); }, 50);
   if (listening && snd.src === "gen" && snd.mode === "mine" && audioEl && audioEl.paused) audioEl.play().catch(() => {});
   if (listening && snd.src === "gen") silentLoop(true);
+  ytResumeIfNeeded();
 }
 ["pointerup", "touchend", "keydown"].forEach((ev) => document.addEventListener(ev, unlockAudio, { capture: true, passive: true }));
 
@@ -2743,7 +2899,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 }
 if (!EMBEDS_OK) { $("#srcTabs").hidden = true; $("#fullAppNote").hidden = false; }
 if (T.status === "running" && T.endAt <= Date.now()) complete(true);
-render(); renderStats(); renderSchedule(); renderAlerts(); renderSound(); tick();
+render(); renderStats(); renderSchedule(); renderAlerts(); renderSound(); renderInstall(); tick();
 if (EMBEDS_OK) {
   prefs.myYt.filter((x) => !x.title).slice(0, 10).forEach((x) => ytOembed(x));
   prefs.mySp.filter((x) => !x.by).slice(0, 10).forEach((x) => spTitle(x));

@@ -74,7 +74,12 @@ It's built for current Chrome, Edge and Safari, on desktop and mobile. Firefox r
 
 Browsers only play sound after you've tapped or clicked the page once, so tap anywhere after opening it. On an iPhone the generated sounds play even with the ring switch on silent (iOS 17 or later). On phone speakers, Lo-fi and Rain come through best; the deeper sounds need headphones.
 
-Spotify plays full songs only when you're logged in to Spotify in the same browser; otherwise it plays 30-second previews. YouTube may show ads, and on phones YouTube stops when the screen locks. YouTube and Spotify need the online app, so they don't play in a downloaded copy.
+**On phones:**
+- **Add it to your Home Screen** (iPhone: Share → Add to Home Screen; Android: menu → Install app). It then opens from its own icon, and the music control at the top of your phone brings you back to it. On iPhone, the Home Screen app keeps its own storage, so add your links again there.
+- **Spotify opens in the Spotify app.** Inside a web page Spotify only plays 30-second previews on phones, so tapping a playlist (or pressing Start) opens it in Spotify, where full songs play on the free plan too and keep going in the background.
+- **YouTube only plays while the hourglass is on screen.** Playing with the screen off or in another app is a YouTube Premium feature. The screen stays on during a session, and YouTube picks up again when you come back.
+
+On a computer, Spotify plays full songs when you're logged in to Spotify in the same browser (Safari blocks this, so it plays previews; the player links to the Spotify app). YouTube may show ads. YouTube and Spotify need the online app, so they don't play in a downloaded copy.
 
 On a computer, the floating hourglass uses a small always-on-top window (Chrome and Edge). Browsers always draw a thin frame around it; a completely frameless desktop widget would need a separate desktop app.
 
