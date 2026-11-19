@@ -252,13 +252,26 @@ body.sound-on .eq i:nth-child(3) { animation-delay: -0.7s; }
 .search-row { display: flex; gap: 8px; }
 .search-row input { flex: 1; min-width: 0; }
 .list-note { margin: 0; font-size: 12.5px; color: var(--muted); }
-.media-card { position: absolute; left: 16px; bottom: 16px; z-index: 4; width: 288px; border-radius: 12px; overflow: hidden;
+.list-label { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.list-head[hidden] { display: none; }
+.loop-row { display: flex; flex-direction: column; gap: 8px; }
+.loop-row .lbl { font-size: 12px; color: var(--muted); }
+.media-card { position: fixed; left: 16px; bottom: 16px; z-index: 6; width: 356px; border-radius: 12px; overflow: hidden;
   background: #0e141c; border: 1px solid rgba(237, 231, 220, 0.14); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); }
-.mc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; font-size: 12px; color: var(--muted); }
-.mc-head span { overflow-wrap: anywhere; line-height: 1.3; }
-.mc-x { flex: none; border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+.mc-head { display: flex; align-items: center; gap: 10px; padding: 8px 6px 8px 12px; }
+.mc-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+#mcTitle { font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#mcState { font-size: 11.5px; color: var(--muted); }
+.media-card.playing #mcState { color: var(--good); }
+.mc-eq { flex: none; display: inline-flex; gap: 2px; align-items: flex-end; width: 13px; height: 12px; }
+.mc-eq i { display: block; width: 3px; height: 3px; border-radius: 1px; background: var(--muted); }
+.media-card.playing .mc-eq i { background: var(--good); animation: eq 1.1s ease-in-out infinite; }
+.media-card.playing .mc-eq i:nth-child(2) { animation-delay: -0.35s; }
+.media-card.playing .mc-eq i:nth-child(3) { animation-delay: -0.7s; }
+.mc-x { flex: none; border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; }
 .mc-x:hover { color: var(--ink); background: rgba(237, 231, 220, 0.06); }
-.mc-body.yt { height: 200px; }
+.mc-body.yt { aspect-ratio: 16 / 9; min-height: 200px; }
 .mc-body.sp { height: 152px; }
 #ytMount, #spMount, .mc-body iframe { display: block; width: 100%; height: 100%; border: 0; }
 .tracks { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12.5px; color: var(--muted); }
@@ -298,12 +311,12 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
   .stage { height: 62vh; }
   .rail { border-left: 0; border-top: 1px solid var(--line); overflow: visible; padding: 22px 18px 40px; }
   body.focus .stage { height: 100vh; }
-  .media-card { left: 12px; top: 52px; bottom: auto; width: 240px; }
+  .media-card { position: static; width: auto; margin: 12px 16px; box-shadow: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   body.running .halo { animation: none; opacity: 0.6; }
   .toast, .chip, .btn, .switch .track, .switch .track::after { transition: none; }
-  body.sound-on .eq i { animation: none; height: 8px; }
+  body.sound-on .eq i, .media-card.playing .mc-eq i { animation: none; height: 8px; }
 }
 </style>
 <script type="importmap">
@@ -335,11 +348,6 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
     </div>
     <p class="stage-note" id="stageNote" hidden></p>
     <div class="stage-hint" id="stageHint">Drag the glass to turn it</div>
-    <div class="media-card" id="mediaCard" hidden>
-      <div class="mc-head"><span id="mcTitle">Now playing</span><button type="button" class="mc-x" id="mcClose" aria-label="Stop and close the player">×</button></div>
-      <div class="mc-body yt" id="ytBox" hidden><div id="ytMount"></div></div>
-      <div class="mc-body sp" id="spBox" hidden><div id="spMount"></div></div>
-    </div>
     <div class="hud" id="hud">
       <div class="hud-time" id="hudTime" role="timer" aria-label="Time left"></div>
       <div class="hud-label" id="hudLabel"></div>
@@ -352,6 +360,16 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
       </div>
     </div>
   </section>
+
+  <div class="media-card" id="mediaCard" hidden>
+    <div class="mc-head">
+      <span class="mc-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+      <div class="mc-txt"><span id="mcTitle">Now playing</span><span id="mcState" aria-live="polite">Loading…</span></div>
+      <button type="button" class="mc-x" id="mcClose" aria-label="Stop and close the player">×</button>
+    </div>
+    <div class="mc-body yt" id="ytBox" hidden><div id="ytMount"></div></div>
+    <div class="mc-body sp" id="spBox" hidden><div id="spMount"></div></div>
+  </div>
 
   <aside class="rail" aria-label="Timer controls">
     <div class="rail-head">
@@ -420,15 +438,19 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
         </div>
       </div>
       <div class="src-panel" id="panel-yt" role="tabpanel" aria-labelledby="tab-yt" hidden>
+        <p class="list-label">Suggestions</p>
         <ul class="pick-list" id="ytList"></ul>
+        <div class="list-head" id="ytMineHead" hidden><p class="list-label" id="ytMineLabel">Your playlist</p><button class="link" type="button" id="ytPlayAll">Play all</button></div>
+        <ul class="pick-list" id="ytMine"></ul>
         <div class="f">
           <label for="ytLink">Add your YouTube playlist or video</label>
           <div class="search-row"><input id="ytLink" type="url" inputmode="url" placeholder="Paste a YouTube link" autocomplete="off"><button class="btn small" type="button" id="ytAdd">Add</button></div>
         </div>
         <p class="hint">To use your own playlist: on YouTube, open the playlist, tap <b>Share → Copy link</b> and paste it here. Public and unlisted playlists work. <a class="link" href="https://www.youtube.com/feed/playlists" target="_blank" rel="noopener">Open my YouTube playlists ↗</a> · <a class="link" href="https://www.youtube.com/results?search_query=adhd+focus+music" target="_blank" rel="noopener">Find ADHD focus music ↗</a></p>
-        <p class="hint">The video plays in a small window on the hourglass. On a phone, tap play on that window once.</p>
+        <p class="hint">The video plays in a small player (YouTube needs it to stay visible). On a phone, tap ▶ on the player once. Live streams like Lofi Girl never end, so they just keep playing.</p>
       </div>
       <div class="src-panel" id="panel-sp" role="tabpanel" aria-labelledby="tab-sp" hidden>
+        <div class="list-head" id="spMineHead" hidden><p class="list-label" id="spMineLabel">Your playlist</p><button class="link" type="button" id="spPlayAll">Play all</button></div>
         <ul class="pick-list" id="spList"></ul>
         <div class="f">
           <label for="spLink">Add your Spotify playlist, album or track</label>
@@ -436,6 +458,15 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
         </div>
         <p class="hint"><b>1.</b> <a class="link" href="https://accounts.spotify.com/login" target="_blank" rel="noopener">Log in to Spotify ↗</a> in this browser, so full songs play from your account (Free or Premium). Without it, Spotify plays 30-second previews.<br>
         <b>2.</b> In Spotify, open a playlist, tap <b>⋯ → Share → Copy link</b> and paste it here. <a class="link" href="https://open.spotify.com/collection/playlists" target="_blank" rel="noopener">Open my Spotify playlists ↗</a></p>
+      </div>
+      <div class="loop-row" id="loopRow" hidden>
+        <span class="lbl" id="loopLbl">When a track ends</span>
+        <div class="chips" role="group" aria-labelledby="loopLbl" id="loopChips">
+          <button class="chip" type="button" data-loop="one">Repeat it</button>
+          <button class="chip" type="button" data-loop="list">Play next</button>
+          <button class="chip" type="button" data-loop="shuffle">Shuffle</button>
+        </div>
+        <p class="hint" id="loopHint"></p>
       </div>
       <p class="hint" id="fullAppNote" hidden>Want your YouTube or Spotify playlists with your sessions? They play in the full app: <a class="link" href="https://jthakur93.github.io/deep-work-hourglass/" target="_blank" rel="noopener">open it ↗</a> and install it from your browser.</p>
       <div class="vol"><label for="soundVol">Volume</label><input id="soundVol" type="range" min="0" max="100" step="1"></div>
@@ -568,7 +599,10 @@ const el = {
   trackInput: $("#trackInput"), trackInfo: $("#trackInfo"), trackClear: $("#trackClear"),
   hudSound: $("#hudSound"), hudMini: $("#hudMini"), miniBtn: $("#miniBtn"),
   srcTabs: [...document.querySelectorAll("#srcTabs button")], ytList: $("#ytList"), ytLink: $("#ytLink"), ytAdd: $("#ytAdd"),
-  spList: $("#spList"), spLink: $("#spLink"), spAdd: $("#spAdd"), mediaCard: $("#mediaCard"), mcTitle: $("#mcTitle"), mcClose: $("#mcClose"),
+  ytMine: $("#ytMine"), ytMineHead: $("#ytMineHead"), ytMineLabel: $("#ytMineLabel"), ytPlayAll: $("#ytPlayAll"),
+  spMineHead: $("#spMineHead"), spMineLabel: $("#spMineLabel"), spPlayAll: $("#spPlayAll"),
+  loopRow: $("#loopRow"), loopChips: [...document.querySelectorAll("#loopChips .chip")], loopHint: $("#loopHint"),
+  spList: $("#spList"), spLink: $("#spLink"), spAdd: $("#spAdd"), mediaCard: $("#mediaCard"), mcTitle: $("#mcTitle"), mcState: $("#mcState"), mcClose: $("#mcClose"),
   ytBox: $("#ytBox"), spBox: $("#spBox"), spMount: $("#spMount"),
   alertsBtn: $("#alertsBtn"), alertsNote: $("#alertsNote"),
   toast: $("#toast"), banner: $("#banner"), bannerText: $("#bannerText"), bannerActions: $("#bannerActions"),
@@ -577,10 +611,11 @@ const el = {
 
 /* ---------- state ---------- */
 const prefs = Object.assign({ minutes: 25, chime: true, autoStart: true, soundMode: "pulse", soundAuto: true, volume: 60,
-  soundSource: "gen", yt: null, sp: null, myYt: [], mySp: [] }, store.get("dwh.prefs.v1", {}));
+  soundSource: "gen", yt: null, sp: null, myYt: [], mySp: [], loopMode: "list" }, store.get("dwh.prefs.v1", {}));
 if (!Array.isArray(prefs.myYt)) prefs.myYt = [];
 if (!Array.isArray(prefs.mySp)) prefs.mySp = [];
 if (!["gen", "yt", "sp"].includes(prefs.soundSource)) prefs.soundSource = "gen";
+if (!["one", "list", "shuffle"].includes(prefs.loopMode)) prefs.loopMode = "list";
 delete prefs.radio;
 delete prefs.ambient;
 const savePrefs = () => store.set("dwh.prefs.v1", prefs);
@@ -966,7 +1001,7 @@ function vMine() {
   const v = newVoice(1, 0);
   if (!audioEl) {
     audioEl = new Audio(); audioEl.preload = "auto";
-    audioEl.addEventListener("ended", () => { trackErrors = 0; playTrack(trackIdx + 1); });
+    audioEl.addEventListener("ended", () => { trackErrors = 0; playTrack(nextTrackIndex()); });
     audioEl.addEventListener("playing", () => { trackErrors = 0; });
     audioEl.addEventListener("error", () => {
       if (!audioEl.getAttribute("src")) return;
@@ -1051,9 +1086,23 @@ function silentLoop(on) {
 }
 
 function showCard(kind, title) {
+  const fresh = el.mediaCard.hidden || el[kind === "yt" ? "ytBox" : "spBox"].hidden;
   el.mediaCard.hidden = false;
   el.ytBox.hidden = kind !== "yt"; el.spBox.hidden = kind !== "sp";
-  el.mcTitle.textContent = title;
+  setCardTitle(title);
+  if (fresh) setCardState("loading");
+}
+function setCardTitle(t) { el.mcTitle.textContent = t; el.mcTitle.title = t; }
+const CARD_STATES = {
+  playing: "Playing",
+  loading: "Loading…",
+  paused: "Paused · tap ▶ on the player to play",
+  tap: "Tap ▶ on the player to start",
+};
+function setCardState(st) {
+  el.mediaCard.classList.toggle("playing", st === "playing");
+  const t = CARD_STATES[st] || "";
+  if (el.mcState.textContent !== t) el.mcState.textContent = t;
 }
 function hideCard(kind) { if (!kind || !el[kind === "yt" ? "ytBox" : "spBox"].hidden) el.mediaCard.hidden = true; }
 
@@ -1075,7 +1124,7 @@ function ytTitle(id, title) {
   prefs.myYt.forEach((x) => { if (!x.list && x.id === id && x.title !== title) { x.title = title; changed = true; } });
   if (prefs.yt && !prefs.yt.list && prefs.yt.id === id && prefs.yt.title !== title) { prefs.yt.title = title; changed = true; }
   if (changed) { savePrefs(); renderPicks(); }
-  if (prefs.soundSource === "yt") el.mcTitle.textContent = title;
+  if (prefs.soundSource === "yt") setCardTitle(title);
 }
 function ytSync() {
   const it = prefs.yt;
@@ -1103,12 +1152,16 @@ function ytSync() {
           ext.ytReady = true; e.target.setVolume(prefs.volume);
           if (ext.ytItem && ytKey(ext.ytItem) !== ext.ytKey) { ext.ytKey = ytKey(ext.ytItem); ytLoadItem(ext.ytItem); }
           if (listening && snd.src === "yt") e.target.playVideo(); else e.target.pauseVideo();
+          setTimeout(() => { try { if (e.target.getPlayerState() !== 1 && listening && snd.src === "yt") setCardState("tap"); } catch (err) {} }, 2500);
         },
         onStateChange: (e) => {
+          if (e.data === 0) { ytEnded(); return; }
+          setCardState(e.data === 1 ? "playing" : e.data === 3 ? "loading" : e.data === 2 ? "paused" : "tap");
+          if (e.data === 1) { try { ext.ytIndex = e.target.getPlaylistIndex(); } catch (err) {} ytApplyListMode(); }
           if (e.data !== 1 || !e.target.getVideoData) return;
           const d = e.target.getVideoData();
           if (!d || !d.title) return;
-          if (ext.ytItem && ext.ytItem.list) el.mcTitle.textContent = `${ext.ytItem.title || "Your playlist"} · ${String(d.title).slice(0, 60)}`;
+          if (ext.ytItem && ext.ytItem.list) setCardTitle(`${ext.ytItem.title || "Your playlist"} · ${String(d.title).slice(0, 60)}`);
           else ytTitle(d.video_id, d.title);
         },
         onError: () => toast("That video can’t play here. Its owner may have turned off embedding, or the playlist is private. Try another one."),
@@ -1147,7 +1200,7 @@ async function ytOembed(it) {
     if (!title) return;
     const k = ytKey(it);
     prefs.myYt.forEach((x) => { if (ytKey(x) === k) x.title = title; });
-    if (prefs.yt && ytKey(prefs.yt) === k) { prefs.yt.title = title; if (snd.src === "yt") el.mcTitle.textContent = title; }
+    if (prefs.yt && ytKey(prefs.yt) === k) { prefs.yt.title = title; if (snd.src === "yt") setCardTitle(title); }
     savePrefs(); renderPicks();
   } catch (e) { /* keep the generic name */ }
 }
@@ -1176,7 +1229,19 @@ function spSync() {
   spLoad().then((api) => {
     api.createController(el.spMount, { uri: ext.spUri, width: "100%", height: 152 }, (ctl) => {
       ext.sp = ctl;
-      ctl.addListener("ready", () => { if (listening && snd.src === "sp") { try { ctl.play(); } catch (e) {} } });
+      ctl.addListener("ready", () => {
+        if (listening && snd.src === "sp") { try { ctl.play(); } catch (e) {} }
+        setTimeout(() => { if (el.mcState.textContent === CARD_STATES.loading) setCardState("tap"); }, 2500);
+      });
+      ctl.addListener("playback_update", (ev) => {
+        const d = (ev && ev.data) || {};
+        setCardState(d.isBuffering ? "loading" : d.isPaused ? "paused" : "playing");
+        if (!d.isPaused && d.duration > 0) {
+          if (d.position >= d.duration - 2500) ext.spNearEnd = true;
+          else if (d.position < 3000) ext.spNearEnd = false;
+        }
+        if (d.isPaused && ext.spNearEnd) { ext.spNearEnd = false; spEnded(); }
+      });
     });
   }).catch(() => {
     ext.spCreating = false;
@@ -1205,9 +1270,64 @@ async function spTitle(item) {
     const title = String(j.title || "").slice(0, 90);
     if (!title) return;
     prefs.mySp.forEach((x) => { if (x.uri === item.uri) x.title = title; });
-    if (prefs.sp && prefs.sp.uri === item.uri) { prefs.sp.title = title; if (prefs.soundSource === "sp") el.mcTitle.textContent = title; }
+    if (prefs.sp && prefs.sp.uri === item.uri) { prefs.sp.title = title; if (prefs.soundSource === "sp") setCardTitle(title); }
     savePrefs(); renderPicks();
   } catch (e) { /* keep the generic name */ }
+}
+
+/* repeat, play next or shuffle when a track ends */
+function nextInList(list, keyFn, cur) {
+  if (!list.length) return null;
+  const i = list.findIndex((x) => keyFn(x) === keyFn(cur));
+  if (prefs.loopMode === "shuffle" && list.length > 1) {
+    let j; do { j = Math.floor(Math.random() * list.length); } while (j === i);
+    return list[j];
+  }
+  return list[(i + 1) % list.length];
+}
+function ytQueue() {
+  const k = ytKey(ext.ytItem);
+  return prefs.myYt.some((x) => ytKey(x) === k) ? prefs.myYt : YT_PICKS;
+}
+function ytApplyListMode() {
+  if (!ext.yt || !ext.ytReady || !ext.ytItem || !ext.ytItem.list) return;
+  try { ext.yt.setLoop(true); ext.yt.setShuffle(prefs.loopMode === "shuffle"); } catch (e) {}
+}
+function ytEnded() {
+  if (!listening || snd.src !== "yt" || !ext.yt) return;
+  const it = ext.ytItem;
+  const again = () => { try { ext.yt.seekTo(0, true); ext.yt.playVideo(); } catch (e) {} };
+  if (it && it.list) { // YouTube plays the playlist itself; "Repeat it" replays the same video
+    if (prefs.loopMode === "one" && ext.ytIndex != null) { try { ext.yt.playVideoAt(ext.ytIndex); } catch (e) {} }
+    return;
+  }
+  if (prefs.loopMode === "one") { again(); return; }
+  const next = nextInList(ytQueue(), ytKey, it);
+  if (!next || ytKey(next) === ytKey(it)) { again(); return; }
+  choose("yt", { yt: { id: next.id || null, list: next.list || null, title: next.title || "" } });
+}
+function spEnded() {
+  if (!listening || snd.src !== "sp" || !ext.sp || !prefs.sp) return;
+  if (prefs.loopMode === "one" || prefs.mySp.length < 2) {
+    try { ext.sp.loadUri(prefs.sp.uri); ext.sp.play(); } catch (e) {}
+    return;
+  }
+  const next = nextInList(prefs.mySp, (x) => x.uri, prefs.sp);
+  choose("sp", { sp: { uri: next.uri, title: next.title || "" } });
+}
+function nextTrackIndex() {
+  if (prefs.loopMode === "one" || myTracks.length < 2) return trackIdx;
+  if (prefs.loopMode === "shuffle") { let j; do { j = Math.floor(Math.random() * myTracks.length); } while (j === trackIdx); return j; }
+  return trackIdx + 1;
+}
+function renderLoop() {
+  const show = STREAMS_OK && EMBEDS_OK ? uiTab === "yt" || uiTab === "sp" || (uiTab === "gen" && prefs.soundMode === "mine") : uiTab === "gen" && prefs.soundMode === "mine";
+  el.loopRow.hidden = !show;
+  el.loopChips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.loop === prefs.loopMode)));
+  const where = uiTab === "yt" ? "your YouTube playlist" : uiTab === "sp" ? "your Spotify playlist" : "your music files";
+  el.loopHint.textContent = prefs.loopMode === "one"
+    ? "The same track plays again, so it lasts your whole session."
+    : prefs.loopMode === "shuffle" ? `A random pick from ${where} plays next.` : `The next item in ${where} plays, then it starts again from the top.`;
 }
 
 /* one place that decides what is playing */
@@ -1281,19 +1401,23 @@ function statusFor(src, isCurrent) {
   return "Playing";
 }
 function renderPicks() {
-  const ytItems = [...YT_PICKS.map((x) => ({ ...x, list: null, mine: false })),
-    ...prefs.myYt.filter((x) => !YT_PICKS.some((p) => p.id === x.id && !x.list)).map((x) => ({ ...x, mine: true }))];
-  el.ytList.replaceChildren(...ytItems.map((it) => {
+  const ytRow = (it, mine) => {
     const k = ytKey(it), cur = prefs.soundSource === "yt" && prefs.yt && ytKey(prefs.yt) === k;
-    return pickRow({ name: it.title || (it.list ? "Your YouTube playlist" : "YouTube video"), desc: it.by || (it.list ? "Your playlist" : "Your video"),
+    return pickRow({ name: it.title || (it.list ? "Your YouTube playlist" : "YouTube video"), desc: it.by || (it.list ? "YouTube playlist" : "YouTube video"),
       active: cur, status: statusFor("yt", cur),
       onPick: () => { if (cur && listening && snd.src === "yt") toggleSound(); else choose("yt", { yt: { id: it.id || null, list: it.list || null, title: it.title || "" } }); },
-      onDelete: it.mine ? () => {
+      onDelete: mine ? () => {
         prefs.myYt = prefs.myYt.filter((x) => ytKey(x) !== k);
         if (cur) { listening = false; soundSync(); prefs.yt = null; }
         savePrefs(); renderPicks();
       } : null });
-  }));
+  };
+  el.ytList.replaceChildren(...YT_PICKS.map((x) => ytRow({ ...x, list: null }, false)));
+  el.ytMine.replaceChildren(...prefs.myYt.map((x) => ytRow(x, true)));
+  el.ytMineHead.hidden = !prefs.myYt.length;
+  el.ytMineLabel.textContent = `Your playlist · ${prefs.myYt.length}`;
+  el.spMineHead.hidden = !prefs.mySp.length;
+  el.spMineLabel.textContent = `Your playlist · ${prefs.mySp.length}`;
   el.spList.replaceChildren(...prefs.mySp.map((it) => {
     const cur = prefs.soundSource === "sp" && prefs.sp && prefs.sp.uri === it.uri;
     return pickRow({ name: it.title || "Spotify", desc: `Spotify ${it.uri.split(":")[1] || "link"}`, active: cur, status: statusFor("sp", cur),
@@ -1312,11 +1436,13 @@ function setTab(t) {
     b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
     const panel = document.getElementById(`panel-${b.dataset.src}`); if (panel) panel.hidden = !on;
   });
+  renderLoop();
 }
 function renderSound() {
   el.soundModes.forEach((b) => b.setAttribute("aria-pressed", String(prefs.soundSource === "gen" && b.dataset.mode === prefs.soundMode)));
   el.soundDesc.textContent = SOUND_DESC[prefs.soundMode] || "";
   el.myTracks.hidden = prefs.soundMode !== "mine";
+  renderLoop();
   el.soundVol.value = String(prefs.volume);
   el.soundVol.style.setProperty("--fill", `${prefs.volume}%`);
   el.optSoundAuto.checked = prefs.soundAuto;
@@ -2413,7 +2539,7 @@ function addYt() {
   if (!it) { toast("That doesn’t look like a YouTube link. On the video or playlist, use Share → Copy link, then paste it here."); el.ytLink.focus(); return; }
   const k = ytKey(it);
   const known = YT_PICKS.find((x) => !it.list && x.id === it.id) || prefs.myYt.find((x) => ytKey(x) === k);
-  if (!known) prefs.myYt = [{ id: it.id, list: it.list, title: "" }, ...prefs.myYt].slice(0, 12);
+  if (!known) prefs.myYt = [...prefs.myYt, { id: it.id, list: it.list, title: "" }].slice(-30);
   el.ytLink.value = "";
   choose("yt", { yt: { id: it.id, list: it.list, title: known ? known.title : "" } });
   if (!known || !known.title) ytOembed(it);
@@ -2425,7 +2551,7 @@ function addSp() {
   if (!it) { toast("That doesn’t look like a Spotify link. In Spotify, use Share → Copy link to playlist, then paste it here."); el.spLink.focus(); return; }
   const known = prefs.mySp.find((x) => x.uri === it.uri);
   const label = `Spotify ${it.type}`;
-  if (!known) prefs.mySp = [{ uri: it.uri, title: label }, ...prefs.mySp].slice(0, 12);
+  if (!known) prefs.mySp = [...prefs.mySp, { uri: it.uri, title: label }].slice(-30);
   el.spLink.value = "";
   choose("sp", { sp: { uri: it.uri, title: known ? known.title : label } });
   spTitle({ uri: it.uri });
@@ -2433,6 +2559,17 @@ function addSp() {
 el.spAdd.addEventListener("click", addSp);
 el.spLink.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addSp(); } });
 el.mcClose.addEventListener("click", () => { listening = false; soundSync(); });
+el.ytPlayAll.addEventListener("click", () => {
+  const it = prefs.loopMode === "shuffle" ? prefs.myYt[Math.floor(Math.random() * prefs.myYt.length)] : prefs.myYt[0];
+  if (it) choose("yt", { yt: { id: it.id || null, list: it.list || null, title: it.title || "" } });
+});
+el.spPlayAll.addEventListener("click", () => {
+  const it = prefs.loopMode === "shuffle" ? prefs.mySp[Math.floor(Math.random() * prefs.mySp.length)] : prefs.mySp[0];
+  if (it) choose("sp", { sp: { uri: it.uri, title: it.title || "" } });
+});
+el.loopChips.forEach((c) => c.addEventListener("click", () => {
+  prefs.loopMode = c.dataset.loop; savePrefs(); renderLoop(); ytApplyListMode();
+}));
 el.soundPlay.addEventListener("click", toggleSound);
 el.hudSound.addEventListener("click", toggleSound);
 let volTimer = 0;
