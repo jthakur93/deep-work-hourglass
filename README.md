@@ -32,6 +32,7 @@ A digital countdown keeps asking you to read it. Sand doesn't. You can see how m
   - **My music:** your own audio files, played as a repeating playlist
 
   The sound starts with your session and fades out just before the bell.
+- **Or stream the music you already like.** Pick from free internet radio (SomaFM's focus channels, plus a search across thousands of stations from the Radio Browser directory), play a YouTube video or live stream such as Lofi Girl, or paste any Spotify playlist. Your picks are saved for next time.
 - **A floating mini timer.** One click pops out a small hourglass that stays on top of every app, even when the main window is minimised. Drag it anywhere and resize it.
 - **A focus schedule.** Add blocks such as *9:30 AM, 90 min, weekdays*. When a block starts, the glass turns over by itself. One click adds the block to Google Calendar, so you get reminded even when the app is closed.
 - **Focus mode.** Full screen, with only the glass and the time.
@@ -63,13 +64,17 @@ Open **[the app](https://jthakur93.github.io/deep-work-hourglass/)**, then:
 
 ## Privacy
 
-There are no accounts, no tracking, no cookies and no server. Your schedule, focus history and settings are kept in your own browser's storage, and so are any music files you add. They never leave your device. The only outside request is for the two fonts, which come from Google Fonts.
+There are no accounts, no tracking and no server. Your schedule, focus history and settings are kept in your own browser's storage, and so are any music files you add. They never leave your device.
+
+The app loads its two fonts from Google Fonts. Radio, YouTube and Spotify only connect when you pick them: your browser then talks to that service directly, under its own terms and privacy policy, and YouTube and Spotify may set their own cookies. The sounds under "Made here" need no connection at all.
 
 ## Browser support
 
 It's built for current Chrome, Edge and Safari, on desktop and mobile. Firefox runs the timer, the 3D glass and the music, but it doesn't let web pages open the floating mini timer. If something doesn't work in your browser, please [open an issue](https://github.com/jthakur93/deep-work-hourglass/issues).
 
-Browsers only play sound after you've clicked on the page once, so click anywhere after opening it.
+Browsers only play sound after you've tapped or clicked the page once, so tap anywhere after opening it. On an iPhone the generated sounds play even with the ring switch on silent (iOS 17 or later). On phone speakers, Lo-fi, Rain and Radio come through best; the deeper sounds need headphones.
+
+Spotify plays full songs only when you're logged in to Spotify in the same browser; otherwise it plays 30-second previews. YouTube may show ads, and on phones YouTube stops when the screen locks. Radio keeps playing in the background.
 
 ## Run it yourself
 
@@ -85,6 +90,8 @@ Pull requests and ideas are welcome. Please [open an issue](https://github.com/j
 ## Credits
 
 Made by [Jyoti Thakur](https://github.com/jthakur93). Built with [three.js](https://threejs.org) and the Web Audio API. Fonts: Fraunces and Manrope.
+
+Radio channels are streamed from [SomaFM](https://somafm.com), which is listener-supported, so please [support them](https://somafm.com/support/) if you enjoy it. Station search uses the community-run [Radio Browser](https://www.radio-browser.info) directory. YouTube and Spotify content plays in their official embedded players and belongs to its owners.
 
 ## Licence
 

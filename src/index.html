@@ -232,6 +232,35 @@ body.sound-on .eq i:nth-child(2) { animation-delay: -0.35s; }
 body.sound-on .eq i:nth-child(3) { animation-delay: -0.7s; }
 @keyframes eq { 0%, 100% { height: 3px; } 50% { height: 11px; } }
 .mode-desc { margin: 0; font-size: 12.5px; color: var(--muted); max-width: 62ch; }
+.src-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: rgba(237, 231, 220, 0.03); }
+.src-tabs button { border: 0; background: transparent; border-radius: 8px; padding: 7px 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.src-tabs button:hover { color: var(--ink); }
+.src-tabs button[aria-selected="true"] { background: var(--sand-soft); color: var(--sand); }
+.src-panel { display: flex; flex-direction: column; gap: 12px; }
+.pick-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pick-list:empty { display: none; }
+.pick-row { display: flex; gap: 6px; align-items: stretch; }
+.pick { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; align-items: center; text-align: left;
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: rgba(237, 231, 220, 0.02); cursor: pointer; }
+.pick:hover { border-color: rgba(228, 173, 99, 0.5); }
+.pick[aria-pressed="true"] { border-color: var(--sand); background: var(--sand-soft); }
+.pick .pn { font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
+.pick .pd { grid-column: 1; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.pick .pa { grid-row: 1 / span 2; grid-column: 2; color: var(--sand); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.pick-del { flex: none; width: 34px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; font-size: 15px; }
+.pick-del:hover { color: var(--ink); border-color: rgba(237, 231, 220, 0.25); }
+.search-row { display: flex; gap: 8px; }
+.search-row input { flex: 1; min-width: 0; }
+.list-note { margin: 0; font-size: 12.5px; color: var(--muted); }
+.media-card { position: absolute; left: 16px; bottom: 16px; z-index: 4; width: 288px; border-radius: 12px; overflow: hidden;
+  background: #0e141c; border: 1px solid rgba(237, 231, 220, 0.14); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); }
+.mc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; font-size: 12px; color: var(--muted); }
+.mc-head span { overflow-wrap: anywhere; line-height: 1.3; }
+.mc-x { flex: none; border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; }
+.mc-x:hover { color: var(--ink); background: rgba(237, 231, 220, 0.06); }
+.mc-body.yt { height: 200px; }
+.mc-body.sp { height: 152px; }
+#ytMount, #spMount, .mc-body iframe { display: block; width: 100%; height: 100%; border: 0; }
 .tracks { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12.5px; color: var(--muted); }
 .tracks #trackInfo { overflow-wrap: anywhere; }
 .vol { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 12px; }
@@ -269,6 +298,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
   .stage { height: 62vh; }
   .rail { border-left: 0; border-top: 1px solid var(--line); overflow: visible; padding: 22px 18px 40px; }
   body.focus .stage { height: 100vh; }
+  .media-card { left: 12px; top: 52px; bottom: auto; width: 240px; }
 }
 @media (prefers-reduced-motion: reduce) {
   body.running .halo { animation: none; opacity: 0.6; }
@@ -305,6 +335,11 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
     </div>
     <p class="stage-note" id="stageNote" hidden></p>
     <div class="stage-hint" id="stageHint">Drag the glass to turn it</div>
+    <div class="media-card" id="mediaCard" hidden>
+      <div class="mc-head"><span id="mcTitle">Now playing</span><button type="button" class="mc-x" id="mcClose" aria-label="Stop and close the player">×</button></div>
+      <div class="mc-body yt" id="ytBox" hidden><div id="ytMount"></div></div>
+      <div class="mc-body sp" id="spBox" hidden><div id="spMount"></div></div>
+    </div>
     <div class="hud" id="hud">
       <div class="hud-time" id="hudTime" role="timer" aria-label="Time left"></div>
       <div class="hud-label" id="hudLabel"></div>
@@ -362,24 +397,59 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
         <h2 id="soundModeH">Focus sound<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></h2>
         <button class="btn small" type="button" id="soundPlay">Play</button>
       </div>
-      <div class="chips" role="group" aria-labelledby="soundModeH" id="soundModes">
-        <button class="chip" type="button" data-mode="pulse">Focus pulse</button>
-        <button class="chip" type="button" data-mode="lofi">Lo-fi beats</button>
-        <button class="chip" type="button" data-mode="binaural">Binaural beta</button>
-        <button class="chip" type="button" data-mode="brown">Brown noise</button>
-        <button class="chip" type="button" data-mode="rain">Rain</button>
-        <button class="chip" type="button" data-mode="mine">My music</button>
+      <div class="src-tabs" role="tablist" aria-label="Where the sound comes from" id="srcTabs">
+        <button type="button" role="tab" id="tab-gen" data-src="gen" aria-controls="panel-gen" aria-selected="true">Made here</button>
+        <button type="button" role="tab" id="tab-radio" data-src="radio" aria-controls="panel-radio" aria-selected="false">Radio</button>
+        <button type="button" role="tab" id="tab-yt" data-src="yt" aria-controls="panel-yt" aria-selected="false">YouTube</button>
+        <button type="button" role="tab" id="tab-sp" data-src="sp" aria-controls="panel-sp" aria-selected="false">Spotify</button>
       </div>
-      <p class="mode-desc" id="soundDesc"></p>
-      <div class="tracks" id="myTracks" hidden>
-        <button class="btn small" type="button" id="trackPick">Choose music files</button>
-        <input id="trackInput" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.opus" multiple hidden>
-        <span id="trackInfo">No files chosen yet</span>
-        <button class="link quiet" type="button" id="trackClear" hidden>Remove</button>
+      <div class="src-panel" id="panel-gen" role="tabpanel" aria-labelledby="tab-gen">
+        <div class="chips" role="group" aria-labelledby="soundModeH" id="soundModes">
+          <button class="chip" type="button" data-mode="pulse">Focus pulse</button>
+          <button class="chip" type="button" data-mode="lofi">Lo-fi beats</button>
+          <button class="chip" type="button" data-mode="binaural">Binaural beta</button>
+          <button class="chip" type="button" data-mode="brown">Brown noise</button>
+          <button class="chip" type="button" data-mode="rain">Rain</button>
+          <button class="chip" type="button" data-mode="mine">My music</button>
+        </div>
+        <p class="mode-desc" id="soundDesc"></p>
+        <div class="tracks" id="myTracks" hidden>
+          <button class="btn small" type="button" id="trackPick">Choose music files</button>
+          <input id="trackInput" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.opus" multiple hidden>
+          <span id="trackInfo">No files chosen yet</span>
+          <button class="link quiet" type="button" id="trackClear" hidden>Remove</button>
+        </div>
+      </div>
+      <div class="src-panel" id="panel-radio" role="tabpanel" aria-labelledby="tab-radio" hidden>
+        <ul class="pick-list" id="radioList"></ul>
+        <div class="f">
+          <label for="radioQuery">Find more stations</label>
+          <div class="search-row"><input id="radioQuery" type="search" placeholder="lofi, piano, ambient, jazz…" autocomplete="off"><button class="btn small" type="button" id="radioGo">Search</button></div>
+        </div>
+        <div class="suggest" id="radioTags"></div>
+        <p class="list-note" id="radioNote" hidden></p>
+        <ul class="pick-list" id="radioResults"></ul>
+        <p class="hint">Free internet radio that keeps playing with your screen off. SomaFM is listener-supported, so <a class="link" href="https://somafm.com/support/" target="_blank" rel="noopener">support them ↗</a> if you love it. Search results come from the Radio Browser community directory.</p>
+      </div>
+      <div class="src-panel" id="panel-yt" role="tabpanel" aria-labelledby="tab-yt" hidden>
+        <ul class="pick-list" id="ytList"></ul>
+        <div class="f">
+          <label for="ytLink">Add a YouTube video or live stream</label>
+          <div class="search-row"><input id="ytLink" type="url" inputmode="url" placeholder="Paste a YouTube link" autocomplete="off"><button class="btn small" type="button" id="ytAdd">Add</button></div>
+        </div>
+        <p class="hint"><a class="link" href="https://www.youtube.com/results?search_query=adhd+focus+music" target="_blank" rel="noopener">Find ADHD focus music on YouTube ↗</a> then copy the link and paste it here. The video plays in a small window on the hourglass. On a phone, tap play on that window once.</p>
+      </div>
+      <div class="src-panel" id="panel-sp" role="tabpanel" aria-labelledby="tab-sp" hidden>
+        <ul class="pick-list" id="spList"></ul>
+        <div class="f">
+          <label for="spLink">Add a Spotify playlist, album or track</label>
+          <div class="search-row"><input id="spLink" type="url" inputmode="url" placeholder="Paste a Spotify link" autocomplete="off"><button class="btn small" type="button" id="spAdd">Add</button></div>
+        </div>
+        <p class="hint"><a class="link" href="https://open.spotify.com/search/adhd%20focus/playlists" target="_blank" rel="noopener">Find focus playlists on Spotify ↗</a> then use Share → Copy link. Full songs play when you’re logged in to Spotify in this browser; otherwise Spotify plays 30-second previews.</p>
       </div>
       <div class="vol"><label for="soundVol">Volume</label><input id="soundVol" type="range" min="0" max="100" step="1"></div>
       <div class="opt"><label class="switch" for="optSoundAuto"><input type="checkbox" id="optSoundAuto" role="switch"><span class="track"></span><span>Play by itself during focus sessions</span></label></div>
-      <p class="hint">Browsers only allow sound after you click somewhere on the page, so click once after opening it.</p>
+      <p class="hint">Browsers only allow sound after you tap or click the page, so tap once after opening it. On a phone speaker, Lo-fi, Rain and Radio come through best; the deeper sounds need headphones.</p>
     </section>
 
     <section class="block" aria-labelledby="todayH">
@@ -506,13 +576,21 @@ const el = {
   soundVol: $("#soundVol"), optSoundAuto: $("#optSoundAuto"), myTracks: $("#myTracks"), trackPick: $("#trackPick"),
   trackInput: $("#trackInput"), trackInfo: $("#trackInfo"), trackClear: $("#trackClear"),
   hudSound: $("#hudSound"), hudMini: $("#hudMini"), miniBtn: $("#miniBtn"),
+  srcTabs: [...document.querySelectorAll("#srcTabs button")], radioList: $("#radioList"), radioQuery: $("#radioQuery"), radioGo: $("#radioGo"),
+  radioTags: $("#radioTags"), radioNote: $("#radioNote"), radioResults: $("#radioResults"), ytList: $("#ytList"), ytLink: $("#ytLink"), ytAdd: $("#ytAdd"),
+  spList: $("#spList"), spLink: $("#spLink"), spAdd: $("#spAdd"), mediaCard: $("#mediaCard"), mcTitle: $("#mcTitle"), mcClose: $("#mcClose"),
+  ytBox: $("#ytBox"), spBox: $("#spBox"), spMount: $("#spMount"),
   alertsBtn: $("#alertsBtn"), alertsNote: $("#alertsNote"),
   toast: $("#toast"), banner: $("#banner"), bannerText: $("#bannerText"), bannerActions: $("#bannerActions"),
   flat: $("#flat"), cTop: $("#cTop"), cBot: $("#cBot"), stageNote: $("#stageNote"),
 };
 
 /* ---------- state ---------- */
-const prefs = Object.assign({ minutes: 25, chime: true, autoStart: true, soundMode: "pulse", soundAuto: true, volume: 55 }, store.get("dwh.prefs.v1", {}));
+const prefs = Object.assign({ minutes: 25, chime: true, autoStart: true, soundMode: "pulse", soundAuto: true, volume: 60,
+  soundSource: "gen", radio: null, yt: null, sp: null, myYt: [], mySp: [] }, store.get("dwh.prefs.v1", {}));
+if (!Array.isArray(prefs.myYt)) prefs.myYt = [];
+if (!Array.isArray(prefs.mySp)) prefs.mySp = [];
+if (!["gen", "radio", "yt", "sp"].includes(prefs.soundSource)) prefs.soundSource = "gen";
 delete prefs.ambient;
 const savePrefs = () => store.set("dwh.prefs.v1", prefs);
 
@@ -677,14 +755,16 @@ const SOUND_DESC = {
 let listening = false;
 const snd = { master: null, verb: null, noise: null, voice: null, mode: null };
 const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
-const volGain = () => Math.pow(clamp(prefs.volume, 0, 100) / 100, 2) * 0.9;
+const volGain = () => Math.pow(clamp(prefs.volume, 0, 100) / 100, 1.6) * 1.25;
 
 function soundInit() {
   if (!ensureAudio()) return false;
   if (snd.master) return true;
   const comp = actx.createDynamicsCompressor();
   comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.3;
-  comp.connect(actx.destination);
+  const limiter = actx.createDynamicsCompressor();
+  limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.002; limiter.release.value = 0.12;
+  comp.connect(limiter).connect(actx.destination);
   snd.master = actx.createGain(); snd.master.gain.value = volGain(); snd.master.connect(comp);
   snd.verb = actx.createConvolver();
   const len = Math.floor(actx.sampleRate * 3), ir = actx.createBuffer(2, len, actx.sampleRate);
@@ -943,25 +1023,282 @@ function soundButtons() {
   el.soundPlay.textContent = listening ? "Stop" : "Play";
   el.hudSound.textContent = listening ? "Sound off" : "Sound on";
 }
-function soundSync() {
-  if (!listening) {
-    if (snd.voice) { stopVoice(snd.voice); snd.voice = null; snd.mode = null; }
-    soundButtons(); renderTrackInfo(); return;
+
+/* ---------- streaming sources: internet radio, YouTube, Spotify ---------- */
+// Claude's preview frame blocks outside media; a downloaded file can't run the YouTube or Spotify players.
+const STREAMS_OK = true;
+const EMBEDS_OK = STREAMS_OK && /^https?:$/.test(location.protocol);
+const SOURCES = ["gen", "radio", "yt", "sp"];
+const RADIO = [
+  { id: "groovesalad", name: "Groove Salad", desc: "Ambient and downtempo beats" },
+  { id: "fluid", name: "Fluid", desc: "Instrumental hip-hop, close to lo-fi" },
+  { id: "dronezone", name: "Drone Zone", desc: "Slow, deep ambient textures" },
+  { id: "deepspaceone", name: "Deep Space One", desc: "Spacey ambient electronica" },
+  { id: "spacestation", name: "Space Station Soma", desc: "Mid-tempo electronica" },
+].map((r) => ({ key: `soma:${r.id}`, name: r.name, desc: `${r.desc} · SomaFM`, urls: [1, 2].map((n) => `https://ice${n}.somafm.com/${r.id}-128-mp3`) }));
+const RADIO_TAGS = ["lofi", "chillout", "ambient", "piano", "jazz", "classical", "study"];
+const YT_PICKS = [
+  { id: "jfKfPfyJRdk", title: "lofi hip hop radio · beats to relax/study to", by: "Lofi Girl · live" },
+  { id: "4xDzrJKXOOY", title: "synthwave radio · beats to chill/game to", by: "Lofi Girl · live" },
+];
+const ext = { radioEl: null, radioKey: null, radioUrls: [], radioTry: 0, radioState: "", radioHits: [],
+  yt: null, ytReady: false, ytCreating: false, ytId: null, ytApi: null, sp: null, spCreating: false, spUri: null, spApi: null };
+let uiTab = prefs.soundSource;
+if (!STREAMS_OK || (!EMBEDS_OK && (uiTab === "yt" || uiTab === "sp"))) { uiTab = "gen"; prefs.soundSource = "gen"; }
+
+/* iPhone: let generated sound play with the ring switch on silent */
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* not supported */ }
+let silentEl = null;
+function silentLoop(on) {
+  if (!IOS || "audioSession" in navigator) return;
+  try {
+    if (on) {
+      if (!silentEl) {
+        const n = 4000, v = new DataView(new ArrayBuffer(44 + n));
+        const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+        w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+        v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+        w(36, "data"); v.setUint32(40, n, true); for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+        silentEl = new Audio(URL.createObjectURL(new Blob([v], { type: "audio/wav" })));
+        silentEl.loop = true; silentEl.setAttribute("x-webkit-airplay", "deny");
+      }
+      silentEl.play().catch(() => {});
+    } else if (silentEl) silentEl.pause();
+  } catch (e) {}
+}
+
+function showCard(kind, title) {
+  el.mediaCard.hidden = false;
+  el.ytBox.hidden = kind !== "yt"; el.spBox.hidden = kind !== "sp";
+  el.mcTitle.textContent = title;
+}
+function hideCard(kind) { if (!kind || !el[kind === "yt" ? "ytBox" : "spBox"].hidden) el.mediaCard.hidden = true; }
+
+/* internet radio */
+function radioStop() {
+  if (!ext.radioEl) return;
+  ext.radioEl.pause(); ext.radioEl.removeAttribute("src"); ext.radioEl.load();
+  ext.radioKey = null; ext.radioState = "";
+}
+function radioSync() {
+  const st = prefs.radio;
+  if (!st || !Array.isArray(st.urls) || !st.urls.length) { toast("Pick a radio station first."); setTab("radio"); return false; }
+  if (!ext.radioEl) {
+    const a = new Audio(); a.preload = "none";
+    a.addEventListener("playing", () => { ext.radioState = "playing"; renderPicks(); });
+    a.addEventListener("waiting", () => { ext.radioState = "loading"; renderPicks(); });
+    a.addEventListener("error", () => {
+      if (!a.getAttribute("src")) return;
+      if (++ext.radioTry < ext.radioUrls.length) { a.src = ext.radioUrls[ext.radioTry]; a.play().catch(() => {}); return; }
+      toast(`${prefs.radio ? prefs.radio.name : "That station"} isn’t responding right now. Try another station.`);
+      listening = false; soundSync();
+    });
+    ext.radioEl = a;
   }
-  if (snd.voice && snd.mode === prefs.soundMode) { soundButtons(); return; }
+  ext.radioEl.volume = clamp(prefs.volume / 100, 0, 1);
+  if (ext.radioKey === st.key && ext.radioEl.getAttribute("src")) {
+    if (ext.radioEl.paused) ext.radioEl.play().catch(() => {});
+    return true;
+  }
+  ext.radioKey = st.key; ext.radioUrls = st.urls.slice(0, 4); ext.radioTry = 0; ext.radioState = "loading";
+  ext.radioEl.src = ext.radioUrls[0];
+  ext.radioEl.play().catch((e) => { if (e && e.name === "NotAllowedError") toast("Tap the page once to let the radio play."); });
+  if (st.uuid) rbClick(st.uuid);
+  return true;
+}
+const RB_HOSTS = ["https://de1.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"];
+async function rbFetch(path) {
+  for (const h of RB_HOSTS) {
+    try { const r = await fetch(h + path); if (r.ok) return await r.json(); } catch (e) { /* next server */ }
+  }
+  throw new Error("Radio Browser unreachable");
+}
+function rbClick(uuid) { rbFetch(`/json/url/${encodeURIComponent(uuid)}`).catch(() => {}); }
+async function radioSearch(q, isTag) {
+  q = String(q || "").trim().slice(0, 40);
+  if (!q) return;
+  el.radioNote.hidden = false; el.radioNote.textContent = `Searching for “${q}”…`;
+  el.radioResults.replaceChildren();
+  const base = { hidebroken: "true", order: "votes", reverse: "true", limit: "60" };
+  try {
+    const calls = isTag ? [{ tag: q }] : [{ name: q }, { tag: q }];
+    let failed = 0;
+    const lists = await Promise.all(calls.map((c) => rbFetch(`/json/stations/search?${new URLSearchParams({ ...base, ...c })}`).catch(() => { failed++; return []; })));
+    if (failed === calls.length) throw new Error("unreachable");
+    const seen = new Set(), hits = [];
+    lists.flat().sort((x, y) => (y.votes || 0) - (x.votes || 0)).forEach((x) => {
+      const url = String(x.url_resolved || x.url || "");
+      if (!x.stationuuid || seen.has(x.stationuuid) || !/^https:\/\//.test(url) || !/^(mp3|aac|aac\+)$/i.test(String(x.codec || ""))) return;
+      seen.add(x.stationuuid);
+      const name = String(x.name || "Station").replace(/\s+/g, " ").trim().slice(0, 60);
+      const bits = [String(x.country || "").slice(0, 30), `${String(x.codec).toUpperCase()}${x.bitrate ? ` ${x.bitrate}k` : ""}`].filter(Boolean);
+      hits.push({ key: `rb:${x.stationuuid}`, uuid: x.stationuuid, name, desc: bits.join(" · "), urls: [url] });
+    });
+    ext.radioHits = hits.slice(0, 15);
+    el.radioNote.textContent = ext.radioHits.length ? `${ext.radioHits.length} stations for “${q}”` : `No stations found for “${q}”. Try a broader word, such as lofi or ambient.`;
+  } catch (e) {
+    ext.radioHits = [];
+    el.radioNote.textContent = "Couldn’t reach the station directory. Check your connection and try again.";
+  }
+  renderPicks();
+}
+
+/* YouTube (the player stays visible on the hourglass, as YouTube requires) */
+function ytLoad() {
+  if (!ext.ytApi) ext.ytApi = new Promise((res, rej) => {
+    if (window.YT && window.YT.Player) { res(window.YT); return; }
+    window.onYouTubeIframeAPIReady = () => res(window.YT);
+    const sc = document.createElement("script"); sc.src = "https://www.youtube.com/iframe_api"; sc.async = true;
+    sc.onerror = () => rej(new Error("load")); document.head.append(sc);
+    setTimeout(() => rej(new Error("timeout")), 15000);
+  }).catch((e) => { ext.ytApi = null; throw e; });
+  return ext.ytApi;
+}
+function ytTitle(id, title) {
+  title = String(title || "").slice(0, 90);
+  if (!title) return;
+  let changed = false;
+  prefs.myYt.forEach((x) => { if (x.id === id && x.title !== title) { x.title = title; changed = true; } });
+  if (prefs.yt && prefs.yt.id === id && prefs.yt.title !== title) { prefs.yt.title = title; changed = true; }
+  if (changed) { savePrefs(); renderPicks(); }
+  if (prefs.soundSource === "yt") el.mcTitle.textContent = title;
+}
+function ytSync() {
+  const it = prefs.yt;
+  if (!it || !it.id) { toast("Pick or paste a YouTube video first."); setTab("yt"); return false; }
+  showCard("yt", it.title || "YouTube");
+  if (ext.yt && ext.ytReady) {
+    try {
+      if (ext.ytId !== it.id) { ext.ytId = it.id; ext.yt.loadVideoById(it.id); } else ext.yt.playVideo();
+      ext.yt.setVolume(prefs.volume);
+    } catch (e) {}
+    return true;
+  }
+  ext.ytId = it.id;
+  if (ext.ytCreating) return true;
+  ext.ytCreating = true;
+  ytLoad().then((YT) => {
+    ext.yt = new YT.Player("ytMount", {
+      width: "100%", height: "100%", videoId: ext.ytId,
+      playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
+      events: {
+        onReady: (e) => {
+          ext.ytReady = true; e.target.setVolume(prefs.volume);
+          if (e.target.getVideoData) { const d = e.target.getVideoData(); if (d && d.video_id && d.video_id !== ext.ytId) e.target.loadVideoById(ext.ytId); }
+          if (listening && snd.src === "yt") e.target.playVideo(); else e.target.pauseVideo();
+        },
+        onStateChange: (e) => {
+          if (e.data === 1 && e.target.getVideoData) { const d = e.target.getVideoData(); if (d) ytTitle(d.video_id, d.title); }
+        },
+        onError: () => toast("That video can’t play here. Its owner may have turned off embedding, so try another one."),
+      },
+    });
+  }).catch(() => {
+    ext.ytCreating = false;
+    toast("YouTube didn’t load. Check your connection and try again.");
+    hideCard("yt"); listening = false; soundSync();
+  });
+  return true;
+}
+function ytPause() {
+  if (ext.yt && ext.ytReady) { try { ext.yt.pauseVideo(); } catch (e) {} }
+  hideCard("yt");
+}
+function parseYouTube(t) {
+  t = String(t || "").trim();
+  const m = t.match(/(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|live\/|shorts\/|embed\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{11}$/.test(t) ? t : null;
+}
+
+/* Spotify */
+function spLoad() {
+  if (!ext.spApi) ext.spApi = new Promise((res, rej) => {
+    window.onSpotifyIframeApiReady = (api) => res(api);
+    const sc = document.createElement("script"); sc.src = "https://open.spotify.com/embed/iframe-api/v1"; sc.async = true;
+    sc.onerror = () => rej(new Error("load")); document.head.append(sc);
+    setTimeout(() => rej(new Error("timeout")), 15000);
+  }).catch((e) => { ext.spApi = null; throw e; });
+  return ext.spApi;
+}
+function spSync() {
+  const it = prefs.sp;
+  if (!it || !it.uri) { toast("Paste a Spotify link first."); setTab("sp"); return false; }
+  showCard("sp", it.title || "Spotify");
+  if (ext.sp) {
+    try { if (ext.spUri !== it.uri) { ext.spUri = it.uri; ext.sp.loadUri(it.uri); } ext.sp.play(); } catch (e) {}
+    return true;
+  }
+  ext.spUri = it.uri;
+  if (ext.spCreating) return true;
+  ext.spCreating = true;
+  spLoad().then((api) => {
+    api.createController(el.spMount, { uri: ext.spUri, width: "100%", height: 152 }, (ctl) => {
+      ext.sp = ctl;
+      ctl.addListener("ready", () => { if (listening && snd.src === "sp") { try { ctl.play(); } catch (e) {} } });
+    });
+  }).catch(() => {
+    ext.spCreating = false;
+    toast("Spotify didn’t load. Check your connection and try again.");
+    hideCard("sp"); listening = false; soundSync();
+  });
+  return true;
+}
+function spPause() {
+  if (ext.sp) { try { ext.sp.pause(); } catch (e) {} }
+  hideCard("sp");
+}
+function parseSpotify(t) {
+  t = String(t || "").trim();
+  let m = t.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(playlist|album|track|episode|show|artist)\/([A-Za-z0-9]{22})/);
+  if (m) return { uri: `spotify:${m[1]}:${m[2]}`, type: m[1], id: m[2] };
+  m = t.match(/^spotify:(playlist|album|track|episode|show|artist):([A-Za-z0-9]{22})$/);
+  return m ? { uri: t, type: m[1], id: m[2] } : null;
+}
+async function spTitle(item) {
+  try {
+    const [, type, id] = item.uri.split(":");
+    const r = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(`https://open.spotify.com/${type}/${id}`)}`);
+    if (!r.ok) return;
+    const j = await r.json();
+    const title = String(j.title || "").slice(0, 90);
+    if (!title) return;
+    prefs.mySp.forEach((x) => { if (x.uri === item.uri) x.title = title; });
+    if (prefs.sp && prefs.sp.uri === item.uri) { prefs.sp.title = title; if (prefs.soundSource === "sp") el.mcTitle.textContent = title; }
+    savePrefs(); renderPicks();
+  } catch (e) { /* keep the generic name */ }
+}
+
+/* one place that decides what is playing */
+function genSync() {
+  if (snd.voice && snd.mode === prefs.soundMode) return true;
   if (snd.voice) { stopVoice(snd.voice); snd.voice = null; snd.mode = null; }
-  if (prefs.soundMode === "mine" && !myTracks.length) {
-    listening = false; soundButtons();
-    toast("Choose a music file first, under Focus sound.");
-    return;
-  }
+  if (prefs.soundMode === "mine" && !myTracks.length) { toast("Choose a music file first, under Focus sound."); return false; }
   const v = makeVoice(prefs.soundMode);
-  if (!v) { listening = false; soundButtons(); return; }
+  if (!v) return false;
   snd.voice = v; snd.mode = prefs.soundMode;
-  soundButtons(); renderTrackInfo();
+  return true;
+}
+function stopSource(src) {
+  if (src === "gen") { if (snd.voice) { stopVoice(snd.voice); snd.voice = null; snd.mode = null; } }
+  else if (src === "radio") radioStop();
+  else if (src === "yt") ytPause();
+  else if (src === "sp") spPause();
+}
+function soundSync() {
+  const src = prefs.soundSource;
+  if (listening) {
+    SOURCES.filter((x) => x !== src).forEach(stopSource);
+    const ok = src === "radio" ? radioSync() : src === "yt" ? ytSync() : src === "sp" ? spSync() : genSync();
+    if (!ok) { listening = false; stopSource(src); }
+  } else SOURCES.forEach(stopSource);
+  snd.src = listening ? src : null;
+  silentLoop(listening && src === "gen");
+  soundButtons(); renderTrackInfo(); renderPicks();
 }
 function toggleSound() {
-  if (!listening && prefs.soundMode === "mine" && !myTracks.length) { el.trackInput.click(); return; }
+  if (!listening && prefs.soundSource === "gen" && prefs.soundMode === "mine" && !myTracks.length) { el.trackInput.click(); return; }
   ensureAudio();
   listening = !listening;
   soundSync();
@@ -969,26 +1306,90 @@ function toggleSound() {
 // called whenever the session changes state
 function ambientUpdate() {
   if (!prefs.soundAuto) return;
-  listening = T.status === "running";
+  listening = T.status === "running" || T.status === "starting";
   soundSync();
+}
+function choose(src, patch) {
+  Object.assign(prefs, patch || {}, { soundSource: src });
+  savePrefs(); ensureAudio();
+  listening = true; soundSync(); renderSound();
 }
 function renderTrackInfo() {
   if (!myTracks.length) { el.trackInfo.textContent = "No files chosen yet"; el.trackClear.hidden = true; return; }
   el.trackClear.hidden = false;
   const cur = myTracks[trackIdx] || myTracks[0];
-  const playing = listening && snd.mode === "mine";
+  const playing = listening && snd.src === "gen" && snd.mode === "mine";
   el.trackInfo.textContent = playing
     ? `Playing ${cur.name}${myTracks.length > 1 ? ` (${trackIdx + 1} of ${myTracks.length})` : ""}`
     : myTracks.length === 1 ? cur.name : `${myTracks.length} tracks ready`;
 }
+function pickRow({ name, desc, active, status, onPick, onDelete, delLabel }) {
+  const li = document.createElement("li"); li.className = "pick-row";
+  const b = document.createElement("button"); b.type = "button"; b.className = "pick"; b.setAttribute("aria-pressed", String(!!active));
+  const n = document.createElement("span"); n.className = "pn"; n.textContent = name;
+  const d = document.createElement("span"); d.className = "pd"; d.textContent = desc || "";
+  const a = document.createElement("span"); a.className = "pa"; a.textContent = status;
+  b.append(n, a, d); b.addEventListener("click", onPick); li.append(b);
+  if (onDelete) {
+    const x = document.createElement("button"); x.type = "button"; x.className = "pick-del"; x.textContent = "×";
+    x.setAttribute("aria-label", delLabel || `Remove ${name}`); x.addEventListener("click", onDelete); li.append(x);
+  }
+  return li;
+}
+function statusFor(src, isCurrent) {
+  if (!isCurrent) return "Play";
+  if (!listening || snd.src !== src) return "Selected";
+  if (src === "radio") return ext.radioState === "playing" ? "Playing" : "Connecting…";
+  return "Playing";
+}
+function renderPicks() {
+  const radioCur = prefs.soundSource === "radio" && prefs.radio;
+  const radioRow = (st) => {
+    const cur = !!radioCur && prefs.radio.key === st.key;
+    return pickRow({ name: st.name, desc: st.desc, active: cur, status: statusFor("radio", cur),
+      onPick: () => { if (cur && listening && snd.src === "radio") toggleSound(); else choose("radio", { radio: { key: st.key, uuid: st.uuid, name: st.name, desc: st.desc, urls: st.urls } }); } });
+  };
+  el.radioList.replaceChildren(...RADIO.map(radioRow));
+  el.radioResults.replaceChildren(...ext.radioHits.map(radioRow));
+  const ytItems = [...YT_PICKS.map((x) => ({ ...x, mine: false })), ...prefs.myYt.filter((x) => !YT_PICKS.some((p) => p.id === x.id)).map((x) => ({ ...x, mine: true }))];
+  el.ytList.replaceChildren(...ytItems.map((it) => {
+    const cur = prefs.soundSource === "yt" && prefs.yt && prefs.yt.id === it.id;
+    return pickRow({ name: it.title || "YouTube video", desc: it.by || "Your link", active: cur, status: statusFor("yt", cur),
+      onPick: () => { if (cur && listening && snd.src === "yt") toggleSound(); else choose("yt", { yt: { id: it.id, title: it.title || "" } }); },
+      onDelete: it.mine ? () => {
+        prefs.myYt = prefs.myYt.filter((x) => x.id !== it.id);
+        if (cur) { listening = false; soundSync(); prefs.yt = null; }
+        savePrefs(); renderPicks();
+      } : null });
+  }));
+  el.spList.replaceChildren(...prefs.mySp.map((it) => {
+    const cur = prefs.soundSource === "sp" && prefs.sp && prefs.sp.uri === it.uri;
+    return pickRow({ name: it.title || "Spotify", desc: `Spotify ${it.uri.split(":")[1] || "link"}`, active: cur, status: statusFor("sp", cur),
+      onPick: () => { if (cur && listening && snd.src === "sp") toggleSound(); else choose("sp", { sp: { uri: it.uri, title: it.title || "" } }); },
+      onDelete: () => {
+        prefs.mySp = prefs.mySp.filter((x) => x.uri !== it.uri);
+        if (cur) { listening = false; soundSync(); prefs.sp = null; }
+        savePrefs(); renderPicks();
+      } });
+  }));
+}
+function setTab(t) {
+  uiTab = t;
+  el.srcTabs.forEach((b) => {
+    const on = b.dataset.src === t;
+    b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
+    const panel = document.getElementById(`panel-${b.dataset.src}`); if (panel) panel.hidden = !on;
+  });
+}
 function renderSound() {
-  el.soundModes.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === prefs.soundMode)));
+  el.soundModes.forEach((b) => b.setAttribute("aria-pressed", String(prefs.soundSource === "gen" && b.dataset.mode === prefs.soundMode)));
   el.soundDesc.textContent = SOUND_DESC[prefs.soundMode] || "";
   el.myTracks.hidden = prefs.soundMode !== "mine";
   el.soundVol.value = String(prefs.volume);
   el.soundVol.style.setProperty("--fill", `${prefs.volume}%`);
   el.optSoundAuto.checked = prefs.soundAuto;
-  soundButtons(); renderTrackInfo();
+  setTab(uiTab);
+  soundButtons(); renderTrackInfo(); renderPicks();
 }
 
 /* ---------- floating mini timer (picture-in-picture) ---------- */
@@ -1138,6 +1539,7 @@ function startSession(opts = {}) {
   el.banner.hidden = true;
   T.status = "starting";
   render();
+  ambientUpdate();
   let started = false;
   const go = () => {
     if (started) return; started = true;
@@ -1958,10 +2360,52 @@ el.optChime.checked = prefs.chime; el.optAuto.checked = prefs.autoStart;
 el.optChime.addEventListener("change", () => { prefs.chime = el.optChime.checked; savePrefs(); ensureAudio(); if (prefs.chime) scheduleChime(); else cancelChime(); });
 el.optAuto.addEventListener("change", () => { prefs.autoStart = el.optAuto.checked; savePrefs(); });
 el.soundModes.forEach((b) => b.addEventListener("click", () => {
-  prefs.soundMode = b.dataset.mode; savePrefs(); renderSound();
-  if (prefs.soundMode === "mine" && !myTracks.length) { el.trackInput.click(); return; }
-  ensureAudio(); listening = true; soundSync();
+  if (b.dataset.mode === "mine" && !myTracks.length) { prefs.soundMode = "mine"; savePrefs(); renderSound(); el.trackInput.click(); return; }
+  choose("gen", { soundMode: b.dataset.mode });
 }));
+el.srcTabs.forEach((b, i) => {
+  b.addEventListener("click", () => {
+    setTab(b.dataset.src);
+    if (b.dataset.src === "yt" && EMBEDS_OK) ytLoad().catch(() => {});
+    if (b.dataset.src === "sp" && EMBEDS_OK) spLoad().catch(() => {});
+  });
+  b.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    const tabs = el.srcTabs.filter((t) => !t.hidden);
+    const j = (tabs.indexOf(b) + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+    tabs[j].focus(); tabs[j].click();
+  });
+});
+el.radioGo.addEventListener("click", () => radioSearch(el.radioQuery.value, false));
+el.radioQuery.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); radioSearch(el.radioQuery.value, false); } });
+el.radioTags.replaceChildren(...[Object.assign(document.createElement("span"), { textContent: "Try:" }), ...RADIO_TAGS.map((t) => {
+  const c = document.createElement("button"); c.type = "button"; c.className = "chip"; c.textContent = t;
+  c.addEventListener("click", () => { el.radioQuery.value = t; radioSearch(t, true); });
+  return c;
+})]);
+function addYt() {
+  const id = parseYouTube(el.ytLink.value);
+  if (!id) { toast("That doesn’t look like a YouTube link. Use the Share button on the video, copy the link, and paste it here."); el.ytLink.focus(); return; }
+  const known = YT_PICKS.find((x) => x.id === id) || prefs.myYt.find((x) => x.id === id);
+  if (!known) prefs.myYt = [{ id, title: "" }, ...prefs.myYt].slice(0, 12);
+  el.ytLink.value = "";
+  choose("yt", { yt: { id, title: known ? known.title : "" } });
+}
+el.ytAdd.addEventListener("click", addYt);
+el.ytLink.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addYt(); } });
+function addSp() {
+  const it = parseSpotify(el.spLink.value);
+  if (!it) { toast("That doesn’t look like a Spotify link. In Spotify, use Share → Copy link to playlist, then paste it here."); el.spLink.focus(); return; }
+  const known = prefs.mySp.find((x) => x.uri === it.uri);
+  const label = `Spotify ${it.type}`;
+  if (!known) prefs.mySp = [{ uri: it.uri, title: label }, ...prefs.mySp].slice(0, 12);
+  el.spLink.value = "";
+  choose("sp", { sp: { uri: it.uri, title: known ? known.title : label } });
+  spTitle({ uri: it.uri });
+}
+el.spAdd.addEventListener("click", addSp);
+el.spLink.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addSp(); } });
+el.mcClose.addEventListener("click", () => { listening = false; soundSync(); });
 el.soundPlay.addEventListener("click", toggleSound);
 el.hudSound.addEventListener("click", toggleSound);
 let volTimer = 0;
@@ -1969,6 +2413,8 @@ el.soundVol.addEventListener("input", () => {
   prefs.volume = Number(el.soundVol.value);
   el.soundVol.style.setProperty("--fill", `${prefs.volume}%`);
   if (snd.master) snd.master.gain.setTargetAtTime(volGain(), actx.currentTime, 0.05);
+  if (ext.radioEl) ext.radioEl.volume = clamp(prefs.volume / 100, 0, 1);
+  if (ext.yt && ext.ytReady) { try { ext.yt.setVolume(prefs.volume); } catch (e) {} }
   clearTimeout(volTimer); volTimer = setTimeout(savePrefs, 300);
 });
 el.optSoundAuto.addEventListener("change", () => {
@@ -1987,8 +2433,7 @@ el.trackInput.addEventListener("change", async () => {
   if (files.reduce((a, f) => a + f.size, 0) < 500 * 1024 * 1024) {
     try { await idb.set("tracks", myTracks.map((t) => ({ name: t.name, blob: t.blob }))); saved = true; } catch (e) {}
   }
-  prefs.soundMode = "mine"; savePrefs(); renderSound();
-  ensureAudio(); listening = true; soundSync();
+  choose("gen", { soundMode: "mine" });
   const what = files.length === 1 ? "Track" : `${files.length} tracks`;
   toast(saved ? `${what} saved in this browser.` : `${what} playing for this visit. They were too large to keep in the browser.`);
 });
@@ -2009,12 +2454,15 @@ el.alertsBtn.addEventListener("click", async () => {
   if (alertsState() === "default") el.alertsNote.textContent = "Your browser didn’t allow alerts here. The bell still plays.";
 });
 
-document.addEventListener("pointerdown", () => {
+function unlockAudio() {
   const wasOff = !actx || actx.state !== "running";
   ensureAudio();
   if (wasOff && T.status === "running") setTimeout(() => { scheduleChime(); ambientUpdate(); }, 50);
-  if (listening && snd.mode === "mine" && audioEl && audioEl.paused) audioEl.play().catch(() => {});
-}, { capture: true });
+  if (listening && snd.src === "gen" && snd.mode === "mine" && audioEl && audioEl.paused) audioEl.play().catch(() => {});
+  if (listening && snd.src === "radio" && ext.radioEl && ext.radioEl.paused && ext.radioEl.getAttribute("src")) ext.radioEl.play().catch(() => {});
+  if (listening && snd.src === "gen") silentLoop(true);
+}
+["pointerup", "touchend", "keydown"].forEach((ev) => document.addEventListener(ev, unlockAudio, { capture: true, passive: true }));
 
 document.addEventListener("keydown", (e) => {
   const tag = (e.target && e.target.tagName) || "";
@@ -2046,10 +2494,12 @@ if (location.protocol === "file:") {
     + "<li><b>Android:</b> menu ⋮ → Install app (or Add to Home screen).</li>"
     + "<li><b>Floating timer:</b> click Float mini timer (or press P) before you minimise. Drag it anywhere and pull its corner to resize.</li>";
 }
-$("#syncHint").textContent = "Your schedule, focus history and music stay in this browser on this device. Nothing is sent anywhere, and there is no account.";
+$("#syncHint").textContent = "Your schedule, focus history and music files stay in this browser on this device, and there is no account. Radio, YouTube and Spotify only connect when you pick them.";
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
+if (!STREAMS_OK) $("#srcTabs").hidden = true;
+else if (!EMBEDS_OK) { $("#tab-yt").hidden = true; $("#tab-sp").hidden = true; $("#srcTabs").style.gridTemplateColumns = "repeat(2, 1fr)"; }
 if (T.status === "running" && T.endAt <= Date.now()) complete(true);
 render(); renderStats(); renderSchedule(); renderAlerts(); renderSound(); tick();
 start3D();

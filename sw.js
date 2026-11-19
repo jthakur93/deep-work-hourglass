@@ -1,5 +1,5 @@
 // Deep Work Hourglass: keeps the app working offline once it has been opened.
-const CACHE = "hourglass-v1";
+const CACHE = "hourglass-v2";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
