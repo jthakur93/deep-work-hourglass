@@ -1,0 +1,16 @@
+{
+  "name": "deep-work-hourglass",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A 3D hourglass focus timer with ADHD-friendly focus music, a schedule and a floating mini timer.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npx --yes serve ."
+  },
+  "devDependencies": {
+    "esbuild": "0.24.0",
+    "three": "0.160.0"
+  },
+  "license": "MIT"
+}
